@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
         rate_out.open(*config.rate_out_file_name);
 
         if (!rate_out.is_open()) {
-            std::cerr << "error: could not open types output file " << *config.rate_out_file_name
+            std::cerr << "error: could not open rate output file " << *config.rate_out_file_name
                       << ", exiting." << std::endl;
             exit(1);
         }
@@ -57,7 +57,6 @@ int main(int argc, char** argv) {
     pcap_pkt pkt;
     zoom::flow_tracker flow_tracker;
     mac_counter mac_counter;
-
 
     struct pkts_bytes {
         unsigned long pkts = 0, bytes = 0;
@@ -203,13 +202,24 @@ int main(int argc, char** argv) {
         zpkt_writer.close();
     }
 
-    std::cout << std::endl;
     std::cout << "- input files: " << pcap_in.file_count() << std::endl;
     std::cout << "- total pkts: " << flow_tracker.count_total_pkts_processed() << std::endl;
     std::cout << "- zoom pkts: " << flow_tracker.count_zoom_pkts_detected() << std::endl;
     std::cout << "- zoom flows: " << flow_tracker.count_zoom_flows_detected() << std::endl;
     std::cout << "- runtime [s]: " << std::fixed << std::setw(3) << pcap_in.time_in_loop()
               << std::endl;
+
+    if (config.flows_out_file_name) {
+        std::cout << "- wrote flow summary to " << *config.flows_out_file_name << std::endl;
+    }
+
+    if (config.types_out_file_name) {
+        std::cout << "- wrote type summary to " << *config.types_out_file_name << std::endl;
+    }
+
+    if (config.rate_out_file_name) {
+        std::cout << "- wrote rate summary to " << *config.rate_out_file_name << std::endl;
+    }
 
     if (config.pcap_out_file_name) {
         std::cout << "- wrote " << pcap_out.count() << " filtered packets to "
@@ -219,14 +229,6 @@ int main(int argc, char** argv) {
     if (config.zpkt_out_file_name) {
         std::cout << "- wrote " << zpkt_writer.count() << " filtered packets to "
                   << *config.zpkt_out_file_name << std::endl;
-    }
-
-    if (config.flows_out_file_name) {
-        std::cout << "- wrote flow summary to " << *config.flows_out_file_name << std::endl;
-    }
-
-    if (config.types_out_file_name) {
-        std::cout << "- wrote type summary to " << *config.types_out_file_name << std::endl;
     }
 
     return 0;

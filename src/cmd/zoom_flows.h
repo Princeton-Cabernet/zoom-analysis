@@ -44,10 +44,10 @@ namespace zoom_flows {
                  cxxopts::value<std::string>(), "OUT.csv")
                 ("t,types-out", "type summary output file (optional)",
                  cxxopts::value<std::string>(), "OUT.csv")
-                ("p,pcap-out", "filtered pcap output file (optional)",
-                 cxxopts::value<std::string>(),"OUT.pcap")
                 ("r,rate-out", "packet rate output file (optional)",
                  cxxopts::value<std::string>(), "OUT.csv")
+                ("p,pcap-out", "filtered pcap output file (optional)",
+                 cxxopts::value<std::string>(),"OUT.pcap")
                 ("z,zpkt-out", "zoom packets binary output file (optional)",
                  cxxopts::value<std::string>(),"OUT.zpkt")
                 ("2,p2p-only", "only process STUN and P2P packets")

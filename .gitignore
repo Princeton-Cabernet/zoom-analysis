@@ -3,3 +3,5 @@
 build/
 test/include/catch.h
 ext/include/cxxopts/cxxopts.h
+data/*.csv
+data/*.zpkt
