@@ -20,11 +20,11 @@
 namespace util {
 
     static std::uint16_t extract_half_word(unsigned offset, const unsigned char* buf) {
-        return net::reverse_byte_order_short(*((std::uint16_t*) (buf + offset)));
+        return ntohs(*((std::uint16_t*) (buf + offset)));
     }
 
     static std::uint32_t extract_word(unsigned offset, const unsigned char* buf) {
-        return net::reverse_byte_order(*((std::uint32_t*) (buf + offset)));
+        return ntohl(*((std::uint32_t*) (buf + offset)));
     }
 
     static double seconds_since(std::chrono::time_point<std::chrono::high_resolution_clock> since) {

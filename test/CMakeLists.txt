@@ -2,9 +2,11 @@
 list(TRANSFORM ZOOM_ANALYSIS_LIB_SRC PREPEND ../)
 
 set(ZOOM_ANALYSIS_TEST_SRC
+    mac_counter_test.cc
     pcap_file_reader_test.cc
     rtp_test.cc
     rtp_test.cc
+    zoom_flow_tracker_test.cc
     zoom_nets_test.cc
     zoom_pkt_test.cc
     zoom_test.cc)
