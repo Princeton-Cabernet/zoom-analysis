@@ -172,6 +172,10 @@ namespace net {
         static ipv4_5tuple from_ipv4_pkt_data(const unsigned char* pkt_data);
 
         ipv4_5tuple() = default;
+        ipv4_5tuple(std::uint32_t ip_src, std::uint32_t ip_dst, std::uint16_t tp_src,
+                             std::uint16_t tp_dst, std::uint8_t ip_proto)
+            : ip_src(ip_src), ip_dst(ip_dst), tp_src(tp_src), tp_dst(tp_dst), ip_proto(ip_proto) { }
+
         ipv4_5tuple(const ipv4_5tuple&) = default;
         ipv4_5tuple& operator=(const ipv4_5tuple&) = default;
 

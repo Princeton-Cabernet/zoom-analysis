@@ -9,8 +9,11 @@ include(cmake/cxxopts.cmake)
 include(cmake/pcap.cmake)
 
 set(ZOOM_ANALYSIS_LIB_SRC
-    lib/zoom_nets.h
     lib/net.h lib/net.cc
+    lib/rtcp.h
+    lib/rtp.h
+    lib/zoom.h lib/zoom.cc
+    lib/zoom_nets.h
 )
 
 list(TRANSFORM ZOOM_ANALYSIS_LIB_SRC PREPEND src/)
