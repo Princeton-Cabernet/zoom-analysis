@@ -35,6 +35,7 @@ set(ZOOM_ANALYSIS_LIB_SRC
 list(TRANSFORM ZOOM_ANALYSIS_LIB_PCAP_SRC PREPEND src/)
 list(TRANSFORM ZOOM_ANALYSIS_LIB_SRC PREPEND src/)
 
+
 #### zoom_flows:
 
 add_executable(zoom_flows
@@ -46,6 +47,7 @@ target_include_directories(zoom_flows PUBLIC ext/include)
 target_link_libraries(zoom_flows ${PCAP_LIBRARIES})
 set_target_properties(zoom_flows PROPERTIES LINKER_LANGUAGE CXX)
 
+
 #### zoom_rtp:
 
 add_executable(zoom_rtp
@@ -53,6 +55,16 @@ add_executable(zoom_rtp
     src/cmd/zoom_rtp_main.cc)
 target_include_directories(zoom_rtp PUBLIC ext/include)
 set_target_properties(zoom_rtp PROPERTIES LINKER_LANGUAGE CXX)
+
+
+#### zoom_rtp:
+
+add_executable(zoom_meetings
+        ${ZOOM_ANALYSIS_LIB_SRC} src/cmd/zoom_meetings.h
+        src/cmd/zoom_meetings_main.cc)
+target_include_directories(zoom_meetings PUBLIC ext/include)
+set_target_properties(zoom_meetings PROPERTIES LINKER_LANGUAGE CXX)
+
 
 #### unit testing:
 
