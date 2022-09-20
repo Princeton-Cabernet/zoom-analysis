@@ -2,13 +2,15 @@
 #ifndef ZOOM_ANALYSIS_NET_H
 #define ZOOM_ANALYSIS_NET_H
 
-#include <ostream>
-#include <string>
+#include <arpa/inet.h> // for ntohs, ntohl, etc.
+
 #include <cstdint>
-#include <stdexcept>
 #include <iomanip>
-#include <tuple>
+#include <ostream>
 #include <sstream>
+#include <stdexcept>
+#include <string>
+#include <tuple>
 
 namespace net {
 
