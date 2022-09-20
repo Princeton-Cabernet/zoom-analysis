@@ -1,0 +1,26 @@
+name: build-test
+on: [push]
+
+jobs:
+  build:
+    name: ${{ matrix.config.name }}
+    runs-on: ${{ matrix.config.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - name: "ubuntu focal"
+            os: ubuntu-20.04
+            dep_install: "sudo DEBIAN_FRONTEND=noninteractive apt-get install -y cmake g++ libpcap-dev pkg-config wget"
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: Install dependencies
+        run: ${{ matrix.config.dep_install }}
+      - name: Configure build
+        run: mkdir build && cd build && cmake ..
+      - name: Build project
+        run: make -C build
+      - name: Run unit tests
+        run: CTEST_OUTPUT_ON_FAILURE=1 make -C build test
