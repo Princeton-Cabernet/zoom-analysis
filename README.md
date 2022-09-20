@@ -57,6 +57,20 @@ usage: zoom_rtp [OPTION...]
   -h, --help                 print this help message
 ```
 
+#### zoom_meetings
+
+Groups packets by media streams and meetings.
+* reads the *.zpkt* input file at the path specified by *-i*
+* writes the set of unique (non-duplicate) media streams to CSV if *-u* specified
+* writes meetings to CSV if *-m* specified
+
+```
+usage: zoom_meetings [OPTION...]
+  -i, --in IN.zpkt                 input file name
+  -u, --unique-out STREAMS.csv     unique streams out file name (optional)
+  -m, --meetings-out MEETINGS.csv  meetings out file name (optional)
+  -h, --help                       print this help message
+```
 
 ### Citing
 
