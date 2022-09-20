@@ -38,6 +38,24 @@ usage: zoom_flows [OPTION...]
   -h, --help               print this help message
 ```
 
+#### zoom_rtp
+
+Collects statistics about RTP streams in Zoom traffic.
+* reads the *.zpkt* input file at the path specified by *-i*
+* writes RTP-stream-level statistics to CSV if *-s* specified
+* writes a detailed packet log to CSV if *-p* specified
+* writes frames to CSV if *-f* specified
+* writes performance-related statistics in 1s intervals to CSV if *-t* specified
+
+```
+usage: zoom_rtp [OPTION...]
+  -i, --in IN.zpkt           input file
+  -s, --streams-out OUT.csv  output path for stream summary (optional)
+  -p, --pkts-out OUT.csv     output path for packet log (optional)
+  -f, --frames-out OUT.csv   output path for frame log (optional)
+  -t, --stats-out OUT.csv    output path for 1s statistics (optional)
+  -h, --help                 print this help message
+```
 
 
 ### Citing
