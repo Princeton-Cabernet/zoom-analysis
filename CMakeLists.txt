@@ -5,6 +5,8 @@ project(zoom_analysis)
 set(CMAKE_CXX_STANDARD 20)
 
 include(cmake/catch.cmake)
+include(cmake/cxxopts.cmake)
+include(cmake/pcap.cmake)
 
 #### unit testing:
 
