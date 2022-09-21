@@ -1,4 +1,4 @@
-## Analyzing Zoom Meeting Performance from Packet Captures
+## Analyzing Zoom Meeting Characteristics and Performance from Packet Captures
 
 [![build-test](https://github.com/Princeton-Cabernet/zoom-analysis/actions/workflows/build-test.yml/badge.svg)](https://github.com/Princeton-Cabernet/zoom-analysis/actions/workflows/build-test.yml)
 
@@ -13,6 +13,11 @@ The techniques used to extract these metrics and make inferences based on them a
 > Oliver Michel, Satadal Sengupta, Hyojoon Kim, Ravi Netravali, and Jennifer Rexford. 2022. Enabling Passive Measurement of Zoom Performance in Production Networks. In Proceedings of the 22nd ACM Internet Measurement Conference (IMC ’22), October 25–27, 2022, Nice, France. ACM, New York, NY, USA, 17 pages. https://doi.org/10.1145/3517745.3561414
 
 ### Build Project
+
+* Prerequisites: gcc, cmake, pkg-config, wget, and libpcap
+  * In Ubuntu, run `apt-get install cmake g++ libpcap-dev pkg-config wget`
+* Build the project using cmake:
+
 
     mkdir build
     cd build
