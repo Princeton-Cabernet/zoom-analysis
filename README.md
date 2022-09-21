@@ -6,7 +6,7 @@ This repository contains tools to analyze various performance-related metrics of
 solely from packet traces of Zoom traffic. The tools allow inferring the types of media (audio,
 video, screen share) used, media bit rates, video frame rates and frame sizes, user participation
 (muted, speaking, silent), and network-related metrics such as frame-level jitter and overall latency
-from *.pcap* data captured using, for example, Wireshark. We also provide a Wireshark plugin to
+from *.pcap* data captured using, for example, Wireshark. We also provide a [Wireshark plugin](wireshark) to
 analyze Zoom traffic interactively using the Wireshark UI.
 
 The techniques used to extract these metrics and make inferences based on them are described in our paper:
