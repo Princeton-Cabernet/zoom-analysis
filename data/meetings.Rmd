@@ -1,0 +1,209 @@
+---
+title: "5 min. Zoom Test Trace: Meetings"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    df_print: paged
+params:
+  input_file: "meetings.csv"
+  fig_path: "fig/"
+---
+
+```{r setup, include=FALSE}
+source("setup.R")
+
+knitr::opts_chunk$set(dev = c("png", "pdf"), fig.width = 7, fig.height = 4,
+  fig.align = "center", fig.keep = "high", fig.path = params$fig_path)
+
+colors <- c("#22528E", "#882111", "#3D8926")
+```
+
+```{r import}
+meetings <- read_csv(params$input_file, show_col_types = FALSE) %>%
+  mutate(conn_type = as.factor(conn_type), zoom_type = as.factor(zoom_type))
+```
+
+### Summary
+
+```{r summary}
+list(
+  streams        = meetings %>% nrow(),
+  unique_streams = meetings$stream_id %>% unique() %>% length(),
+  meetings       = meetings$meeting_id %>% unique() %>% length()
+) %>% as_tibble_row()
+```
+
+```{r}
+meetings %>%
+  group_by(stream_id, zoom_type) %>%
+  summarize(.groups="keep") %>%
+  group_by(zoom_type) %>%
+  summarize(count = n(), .groups="keep") %>%
+  arrange(-count)
+```
+
+### Stream Duplicates
+
+* limited to <= 20 duplicates
+
+```{r stream-duplicates}
+meetings %>%
+  group_by(stream_id, zoom_type) %>%
+  summarize(n = n(), .groups="keep") %>%
+  filter(n > 1 & n <= 20) %>%
+  ggplot(aes(x=factor(n))) +
+    geom_bar(stat="count", aes(fill=zoom_type)) +
+    scale_fill_manual(name="Type",values=colors, labels=c("Screen S.", "Audio", "Video")) +
+    labs(x="# Stream Duplicates", y="Frequency") +
+    theme_om()
+```
+
+### Meeting duration
+
+```{r meeting-duration-cdf}
+meetings %>%
+  group_by(meeting_id) %>%
+  summarize(start = min(start_ts_s), end = max(end_ts_s)) %>%
+  mutate(duration_s = (end - start) / 60) %>%
+  ggplot(aes(x=duration_s)) +
+    labs(x="Meeting duration [min.]", y="CDF") +
+    scale_x_continuous(breaks=seq(0,720,60)) +
+    stat_ecdf(color=colors[1], size=0.75) +
+    theme_om()
+```
+
+### Number of streams per meeting
+
+```{r}
+meetings %>%
+  group_by(meeting_id) %>%
+  summarize(streams = n()) %>%
+  ggplot(aes(x=streams)) +
+    labs(x="# Streams per meeting (log.)", y="CDF") +
+    scale_x_log10() +
+    annotation_logticks(sides="b", colour = "gray50") +
+    stat_ecdf(color=colors[1], size=0.75) +
+    theme_om()
+```
+
+### Number of unique streams per meeting
+
+```{r}
+meetings %>%
+  group_by(meeting_id) %>%
+  summarize(unique_streams = stream_id %>% unique() %>% length()) %>%
+  ggplot(aes(x=unique_streams)) +
+    labs(x="# Unique streams per meeting (log.)", y="CDF") +
+    scale_x_log10() +
+    annotation_logticks(sides="b", colour = "gray50") +
+    stat_ecdf(color=colors[1], size=0.75) +
+    theme_om()
+```
+
+### Number of participants per meeting
+
+```{r}
+participants_per_meeting <- meetings %>% 
+  group_by(meeting_id) %>%
+  arrange(ssrc, .by_group = TRUE) %>%
+  mutate(participant = cumsum((ssrc - lag(ssrc)) > 1 & !is.na(lag(ssrc)))) %>%
+  summarize(participants = participant %>% unique() %>% length())
+
+participants_per_meeting %>%
+  ggplot(aes(x=participants)) +
+    labs(x="# Meeting Participants (log.)", y="CDF") +
+    scale_x_log10() +
+    annotation_logticks(sides="b", colour = "gray50") +
+    stat_ecdf(color=colors[1], size=0.75) +
+    theme_om()
+```
+
+```{r}
+# group by meeting participant:
+participants <- meetings %>%
+  group_by(meeting_id) %>%
+  arrange(ssrc, .by_group = TRUE) %>%
+  mutate(participant_id = cumsum((ssrc - lag(ssrc)) > 1 & !is.na(lag(ssrc)))) %>%
+  group_by(meeting_id, participant_id) %>%
+  summarize(
+    start_ts_s = min(start_ts_s),
+    end_ts_s = max(end_ts_s),
+    audio = 15 %in% unique(zoom_type),
+    video = 16 %in% unique(zoom_type),
+    screen = 13 %in% unique(zoom_type),
+    start_ts_min = as.integer(min(start_ts_s) / 60), # 60s buckets
+    end_ts_min = as.integer(max(end_ts_s) / 60),
+    .groups="keep"
+  )
+```
+
+```{r}
+list(participants = participants %>% nrow()) %>% as_tibble_row()
+```
+
+
+
+```{r}
+# generate time series from meeting/participant list:
+participants_over_time <- participants %>%
+  group_by(meeting_id, participant_id) %>%
+  summarize(min_activity = seq(start_ts_min, end_ts_min, 1), .groups="keep") %>%
+  group_by(min_activity) %>%
+  summarize(
+    meeting_count = meeting_id %>% unique() %>% length(),
+    participant_count = unique(meeting_id, participant_id) %>% length(),
+    .groups = "keep"
+  ) %>%
+  mutate(ts = as_datetime((min_activity - 4*60) * 60)) # LT = UTC-4
+```
+
+
+### Number of concurrent meetings on campus
+  
+```{r meeting-count-ts}
+participants_over_time %>%
+  ggplot(aes(x=ts, y=meeting_count)) +
+    labs(x = "Local Time", y = "Concurrent Meeting Count") +
+    scale_y_continuous(limits = c(0, 150)) +
+    geom_line(color=colors[1], size=0.75) +
+    theme_om()
+```
+
+### Number of concurrent participants on campus
+
+```{r participant-count-ts}
+participants_over_time %>%
+  ggplot(aes(x=ts, y=participant_count)) +
+    labs(x = "Local Time", y = "Concurrent Participant Count") +
+    scale_y_continuous(limits = c(0, 250)) +
+    geom_line(color=colors[1], size=0.75) +
+    theme_om()
+```
+
+### Media usage per participant
+
+```{r}
+participants %>%
+  group_by(audio, video, screen) %>%
+  summarize(count = n(), frac = n() / participants %>% nrow(), .groups="keep") %>%
+  arrange(-frac)
+```
+
+### Fraction of speaking time when not muted
+* by number of packets
+
+```{r frac-speaking, fig.width=4, fig.height=3.8}
+meetings %>%
+  filter(zoom_type == 15 & audio_112_pkts > 0) %>%
+  mutate(
+    audio_112_frac = audio_112_pkts / (audio_99_pkts + audio_112_pkts),
+  ) %>%
+  select(speaking = audio_112_frac) %>%
+  ggplot(aes(x=speaking)) +
+    scale_x_continuous(expand = c(0.035, 0)) +
+    scale_y_continuous(expand = c(0.035, 0)) +
+    stat_ecdf(color=colors[1], size=0.75) +
+    labs(x="Fraction Speaking (by packet count)", y="CDF") +
+    theme_om()
+```
+

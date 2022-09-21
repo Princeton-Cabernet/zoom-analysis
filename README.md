@@ -29,6 +29,13 @@ make
 ```
 (cd build && make test)
 ```
+
+### Demo
+
+This distribution includes a small (5 min) data set that contains two Zoom media streams. Use the
+analysis scripts and Makefile in [*/data*](data) to generate a set of reports and plots describing
+this  data.
+
 ### Applications
 
 #### zoom_flows

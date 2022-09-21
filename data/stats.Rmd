@@ -1,0 +1,185 @@
+---
+title: "5 min. Zoom Test Trace: 1s-Statistics"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    df_print: paged
+params:
+  input_file: "stats.csv"
+  fig_path: "fig/"
+---
+
+```{R setup, include=FALSE}
+source("setup.R")
+
+knitr::opts_chunk$set(dev = c("png", "pdf"), fig.width = 9, fig.height = 4.5,
+  fig.align = "center", fig.keep = "high", fig.path = params$fig_path)
+```
+
+```{R import}
+stats <- read_csv(params$input_file, comment = "#",
+                    col_types = "niicicifnfnnnnnnnn", 
+                    col_names = c("ts_s","report_count", "ip_proto","ip_src",
+                                  "tp_src","ip_dst", "tp_dst","media_type",
+                                  "ssrc","pt","pkts", "bytes","lost",
+                                  "duplicates","out_of_order", "frames",
+                                  "mean_frame_len", "mean_frame_jitter")) %>%
+  arrange(ts_s)
+```
+
+# Overview
+
+```{r overview}
+stats %>%
+  group_by(media_type, pt) %>%
+  summarize(
+    samples   = n(),
+    pkts      = sum(pkts),
+    bytes     = sum(bytes),
+    pkt_rate  = mean(pkts),
+    byte_rate = mean(bytes), .groups = 'drop')
+```
+
+# Packet / Byte Rates over Time
+
+```{r}
+rates <- stats %>%
+  filter(media_type %in% c(13, 15, 16)) %>%
+  group_by(ts_s, media_type) %>%
+  summarize(pkts = sum(pkts), bytes = sum(bytes), .groups = 'drop') %>%
+  mutate(time_local = as_datetime(ts_s - 14400))
+```  
+  
+```{r stats-pkt-rate-ts, fig.width = 5.2, fig.height = 2.0}
+rates %>%
+  group_by(media_type) %>%
+  mutate(pkts_sma = zoo::rollmean(pkts, 10, fill=NA)) %>%
+  ggplot(aes(x = time_local, y = pkts_sma / 1000,
+                       color = media_type)) +
+    labs(x = "Time", y = "Packet Rate [Kpps]", color = "Media Type") +
+    scale_color_manual(
+      values=c("16" = "steelblue4", "15" = "red4", "13" = "green4"),
+      labels = c("Video", "Audio", "Screen Share")) +
+    geom_line() +
+    theme_om() +
+    theme(
+      legend.title = element_blank(),
+      legend.position = c(0.98, 0.75),
+      legend.margin = margin(0, 0, 0, 0),
+      legend.spacing.x = unit(0, "mm"),
+      legend.spacing.y = unit(0, "mm"))
+```
+  
+```{r stats-data-rate-ts, fig.width = 5.0, fig.height = 1.8}
+rates %>%
+  group_by(media_type) %>%
+  mutate(bytes_sma = zoo::rollmean(bytes, 10, fill=NA)) %>%
+  ggplot(aes(x = time_local, y = bytes_sma / 1000 / 1000 * 8,
+                       color = media_type)) +
+    labs(x = "Time", y = "Bitrate [Mbit/s]", color = "Media Type") +
+    scale_color_manual(
+      values=c("16" = "steelblue4", "15" = "red4", "13" = "green4"),
+      labels = c("Video", "Audio", "Screen Share")) +
+    geom_line() +
+    theme_om() +
+    theme(
+      legend.title = element_blank(),
+      legend.position = c(0.98, 0.7),
+      legend.margin = margin(0, 0, 0, 0),
+      legend.spacing.x = unit(0, "mm"),
+      legend.spacing.y = unit(0, "mm"))
+```
+
+```{r}
+stats %<>%
+  filter(media_type == 13 | media_type == 15 | media_type == 16) %>%
+  filter(pt %in% c(99, 98, 112)) %>%
+  filter(report_count >= 4)
+```
+
+
+
+# Distributions
+
+## Packet / Byte Rate CDF including Sub-streams
+
+```{r stats-data-rate-cdf, fig.width = 2.4, fig.height = 1.8}
+ stats %>%
+  ggplot(aes(x = bytes / 1000 / 1000 * 8, color = media_type)) +
+    scale_x_continuous(limits=c(0, 1.1), breaks=c(0, 0.25, 0.5, 0.75, 1)) +
+    labs(x = "Bitrate [Mbit/s]", y = "CDF", color = "") +
+    scale_color_manual(
+      values=c("15" = "red4", "13" = "green4","16" = "steelblue4"),
+      labels = c("Audio", "Screen Share", "Video")) +
+    stat_ecdf() +
+    theme_om() +
+    theme(
+      legend.title = element_blank(),
+      legend.position = c(0.98, 0.32),
+        legend.margin = margin(0, 0, 0, 0),
+        legend.spacing.x = unit(0, "mm"),
+        legend.spacing.y = unit(0, "mm"))
+```
+
+## Frame Rate (video & screen share)
+
+```{r stats-frame-rate-cdf, fig.width = 2.4, fig.height = 1.8}
+stats %>%
+  filter((media_type == 13 | media_type == 16) & (pt == 98 | pt == 99)) %>%
+  ggplot(aes(x = frames, color = media_type)) +
+    labs(x = "Frame Rate [fps]", y = "CDF") +
+    scale_color_manual(
+      values=c("13" = "green4", "16" = "steelblue4"),
+      labels = c("Screen Share", "Video")) +
+    xlim(0, 33) +
+    stat_ecdf() +
+    theme_om() +
+    theme(
+      legend.title = element_blank(),
+      legend.position = c(0.98, 0.2),
+      legend.margin = margin(0, 0, 0, 0),
+      legend.spacing.x = unit(0, "mm"),
+      legend.spacing.y = unit(0, "mm"))
+```
+
+## Frame Size (video & screen share)
+
+```{r stats-frame-size-cdf, fig.width = 2.4, fig.height = 1.8}
+stats %>%
+  filter((media_type == 13 | media_type == 16) & (pt == 98 | pt == 99)) %>%
+  ggplot(aes(x = mean_frame_len, color = media_type)) +
+    labs(x = "Frame Size [byte]", y = "CDF") +
+    scale_color_manual(
+      values=c("13" = "green4", "16" = "steelblue4"),
+      labels = c("Screen Share", "Video")) +
+    xlim(0, 12500) +
+    stat_ecdf() +
+    theme_om() +
+    theme(
+      legend.title = element_blank(),
+      legend.position = c(0.98, 0.2),
+      legend.margin = margin(0, 0, 0, 0),
+      legend.spacing.x = unit(0, "mm"),
+      legend.spacing.y = unit(0, "mm"))
+```
+
+## Frame-level Jitter
+
+```{r stats-jitter-cdf, fig.width = 2.4, fig.height = 1.8}
+ stats %>%
+  filter((media_type == 16) & (pt == 98)) %>%
+  ggplot(aes(x = mean_frame_jitter, color = media_type)) +
+    scale_x_continuous(limits=c(0, 80)) +
+    labs(x = "Frame-level Jitter [ms]", y = "CDF", color = "") +
+    scale_color_manual(
+      values=c("16" = "steelblue4"),
+      labels = c("Video")) +
+    stat_ecdf() +
+    theme_om() +
+    theme(
+      legend.title = element_blank(),
+      legend.position = c(0.98, 0.1),
+        legend.margin = margin(0, 0, 0, 0),
+        legend.spacing.x = unit(0, "mm"),
+        legend.spacing.y = unit(0, "mm"))
+```

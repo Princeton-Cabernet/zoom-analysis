@@ -1,0 +1,71 @@
+---
+title: "5 min. Zoom Test Trace: Streams"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    df_print: paged
+params:
+  input_file: "streams.csv"
+  fig_path: "fig/"
+---
+
+```{R setup, include=FALSE}
+source("setup.R")
+
+knitr::opts_chunk$set(dev = c("png", "pdf"), fig.width = 9, fig.height = 4.5,
+  fig.align = "center", fig.keep = "high", fig.path = params$fig_path)
+```
+
+```{R import}
+streams <- read_csv(params$input_file, comment = "#",
+                    col_types = "niciciffnnnnnn", 
+                    col_names = c("rtp_ssrc", "rtp_pl", "ip_src", "tp_src",
+                                  "ip_dst", "tp_dst", "flow_type", "zoom_type",
+                                  "start_ts_s", "start_ts_us", "end_ts_s",
+                                  "end_ts_us", "start_rtp_ts", "end_rtp_ts",
+                                  "pkts", "bytes"))
+```
+
+```{r}
+streams %>% group_by(rtp_ssrc, ip_src, ip_dst, tp_src, tp_dst) %>%
+  summarize(substreams = n(), .groups = "drop")
+```
+
+# Totals
+
+```{r totals}
+totals <- list(
+  streams = nrow(streams),
+  pkts = sum(streams$pkts),
+  bytes = sum(streams$bytes)
+)
+
+totals %>% as_tibble_row()
+```
+
+# Overview
+
+```{r overview}
+streams %>%
+  group_by(zoom_type, rtp_pl) %>%
+  summarize(n = n(), pkts = sum(pkts), bytes = sum(bytes), .groups = 'drop')
+```
+
+
+```{r streams-stream-dur, fig.width = 2.6, fig.height = 2.0}
+streams %>% filter(zoom_type %in% c(13,15,16)) %>%
+  mutate(dur_min = (end_ts_s - start_ts_s) / 60) %>%
+  filter(dur_min > 0) %>%
+  ggplot(aes(x=dur_min, color=zoom_type)) +
+    scale_x_continuous(limits=c(0, 120), breaks=c(0, 30, 60, 90, 120)) +
+    labs(x="Stream Duration [min.]", y="CDF", color="Media Type") +
+    stat_ecdf() +
+    theme(
+      legend.title = element_blank(),
+      legend.position = c(0.8, 0.2),
+      legend.margin = margin(0, 0, 0, 0),
+      legend.spacing.x = unit(0, "mm"),
+      legend.spacing.y = unit(0, "mm"))
+```
+
+
