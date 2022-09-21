@@ -15,19 +15,20 @@ The techniques used to extract these metrics and make inferences based on them a
 ### Build Project
 
 * Prerequisites: gcc, cmake, pkg-config, wget, and libpcap
-  * In Ubuntu, run `apt-get install cmake g++ libpcap-dev pkg-config wget`
-* Build the project using cmake:
+    * Under Ubuntu, run `apt-get install cmake g++ libpcap-dev pkg-config wget`
 
-
-    mkdir build
-    cd build
-    cmake -DCMAKE_BUILD_TYPE=Release ..
-    make
+```
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release ..
+make
+```
 
 ### Run Unit Tests
 
-    (cd build && make test)
-
+```
+(cd build && make test)
+```
 ### Applications
 
 #### zoom_flows
