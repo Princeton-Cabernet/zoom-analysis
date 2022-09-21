@@ -1,6 +1,16 @@
-## Zoom Analysis
+## Analyzing Zoom Meeting Performance from Packet Captures
 
 [![build-test](https://github.com/Princeton-Cabernet/zoom-analysis/actions/workflows/build-test.yml/badge.svg)](https://github.com/Princeton-Cabernet/zoom-analysis/actions/workflows/build-test.yml)
+
+This repository contains tools to analyze various performance-related metrics of Zoom meetings
+solely from packet traces of Zoom traffic. The tools allow inferring the types of media (audio,
+video, screen share) used, media bit rates, video frame rates and frame sizes, user participation
+(muted, speaking, silent), and network-related metrics such as frame-level jitter and overall latency
+from *.pcap* data captured using, for example, Wireshark. We also provide a Wireshark plugin to
+analyze Zoom traffic interactively using the Wireshark UI.
+
+The techniques used to extract these metrics and make inferences based on them are described in our paper:
+> Oliver Michel, Satadal Sengupta, Hyojoon Kim, Ravi Netravali, and Jennifer Rexford. 2022. Enabling Passive Measurement of Zoom Performance in Production Networks. In Proceedings of the 22nd ACM Internet Measurement Conference (IMC ’22), October 25–27, 2022, Nice, France. ACM, New York, NY, USA, 17 pages. https://doi.org/10.1145/3517745.3561414
 
 ### Build Project
 
@@ -71,13 +81,6 @@ usage: zoom_meetings [OPTION...]
   -m, --meetings-out MEETINGS.csv  meetings out file name (optional)
   -h, --help                       print this help message
 ```
-
-### Citing
-
-If you find this repository useful, please consider citing:
-
-> Oliver Michel, Satadal Sengupta, Hyojoon Kim, Ravi Netravali, and Jennifer Rexford. 2022. Enabling Passive Measurement of Zoom Performance in Production Networks. In Proceedings of the 22nd ACM Internet Measurement Conference (IMC ’22), October 25–27, 2022, Nice, France. ACM, New York, NY, USA, 17 pages. https://doi.org/10.1145/3517745.3561414
-
 
 ### License
 
