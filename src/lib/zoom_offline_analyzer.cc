@@ -1,4 +1,3 @@
-
 #include "zoom_offline_analyzer.h"
 
 void zoom::offline_analyzer::add(const zoom::pkt& pkt) {
@@ -17,32 +16,7 @@ void zoom::offline_analyzer::add(const zoom::pkt& pkt) {
 
         if (streams_it == streams.end()) {
 
-            auto stream_meta = zoom::rtp_stream_meta::from_pkt(pkt);
-
-            auto frame_handler = [this](const stream_analyzer& a,
-                const struct stream_analyzer::frame& f) -> void {
-
-                if (_frame_log.enabled)
-                    _write_frame_log(a, f);
-            };
-
-            auto stats_handler = [this](const stream_analyzer& a, unsigned report_count,
-                    unsigned ts, const struct stream_analyzer::stats& c) -> void {
-
-                if (_stats_log.enabled)
-                    _write_stats_log(a.meta(), report_count, ts, c);
-            };
-
-            // use 8,000 kHz for audio, 90,000 kHz for video
-            auto sampling_rate = pkt.zoom_media_type == 15 ? 8000 : 90000;
-            stream_analyzer a(frame_handler, stats_handler, sampling_rate, stream_meta);
-
-            const auto &[it, success]
-                    = streams.emplace(stream_key, stream_state{.analyzer = std::move(a)});
-
-            if (success) {
-                streams_it = it;
-            } else {
+            if ((streams_it = _insert_new_stream(stream_key, pkt)) == streams.end()) {
                 std::cerr << "error: failed setting up stream state, exiting." << std::endl;
                 return;
             }
@@ -57,6 +31,51 @@ void zoom::offline_analyzer::add(const zoom::pkt& pkt) {
                 .pkts_hint = pkt.pkts_in_frame
         });
     }
+}
+
+zoom::offline_analyzer::streams_map::iterator zoom::offline_analyzer::_insert_new_stream(const zoom::rtp_stream_key& stream_key, const zoom::pkt& pkt) {
+
+    auto stream_meta = zoom::rtp_stream_meta::from_pkt(pkt);
+
+    auto frame_handler = [this](const stream_analyzer& a,
+                                const struct stream_analyzer::frame& f) -> void {
+
+        _frame_handler(a, f);
+    };
+
+    auto stats_handler = [this](const stream_analyzer& a, unsigned report_count,
+                                unsigned ts, const struct stream_analyzer::stats& c) -> void {
+
+        _stats_handler(a, report_count, ts, c);
+    };
+
+    // use 8,000 kHz for audio, 90,000 kHz for video
+    auto sampling_rate = pkt.zoom_media_type == 15 ? 8000 : 90000;
+
+    stream_analyzer a(frame_handler, stats_handler, sampling_rate, stream_meta);
+
+    const auto &[it, success]
+            = streams.emplace(stream_key, stream_state{.analyzer = std::move(a)});
+
+    if (success) {
+        return it;
+    } else {
+        return streams.end();
+    }
+}
+
+void zoom::offline_analyzer::_frame_handler(const stream_analyzer& a,
+                                            const struct stream_analyzer::frame& f) {
+
+    if (_frame_log.enabled)
+        _write_frame_log(a, f);
+}
+
+void zoom::offline_analyzer::_stats_handler(const stream_analyzer& a, unsigned report_count,
+                                            unsigned ts, const struct stream_analyzer::stats& c) {
+
+    if (_stats_log.enabled)
+        _write_stats_log(a.meta(), report_count, ts, c);
 }
 
 void zoom::offline_analyzer::write_streams_log() {
@@ -186,22 +205,3 @@ void zoom::offline_analyzer::_write_stats_log(const zoom::rtp_stream_meta& m, un
         << std::dec << c.mean_frame_size() << ","
         << std::dec << c.mean_jitter() << std::endl;
 }
-
-//bool zoom::offline_analyzer::_has_stream(const zoom::rtp_stream_key& key) const {
-//
-//    return streams.find(key) != streams.end();
-//}
-//
-//zoom::offline_analyzer::stream_state&
-//    zoom::offline_analyzer::_get_stream(const zoom::rtp_stream_key& key) {
-//
-//    auto it = streams.find(key);
-//
-//    if (it == streams.end())
-//        throw std::logic_error("stream not tracked");
-//
-//    return it->second;
-//}
-//
-//zoom::offline_analyzer::stream_state&
-//    zoom::offline_analyzer::_init_stream(const zoom::rtp_stream_key& key) { }

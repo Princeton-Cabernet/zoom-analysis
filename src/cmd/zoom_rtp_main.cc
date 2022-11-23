@@ -1,7 +1,6 @@
-
-#include "zoom_rtp.h"
-#include "../lib/zoom_offline_analyzer.h"
 #include "../lib/simple_binary_reader.h"
+#include "../lib/zoom_offline_analyzer.h"
+#include "zoom_rtp.h"
 
 int main(int argc, char** argv) {
 
@@ -43,7 +42,8 @@ int main(int argc, char** argv) {
 
         if ((++pkt_count % 10000000) == 0) { // every 10M packets
             std::cout << "- " << pkt_count << '/' << pkt_reader.size() << ": "
-                      << (unsigned) (((double) pkt_count / (double) pkt_reader.size()) * 100) << "%" << std::endl;
+                      << (unsigned) (((double) pkt_count / (double) pkt_reader.size()) * 100) << "%"
+                      << std::endl;
         }
 
         if (config.limit && pkt_count == *config.limit) {
