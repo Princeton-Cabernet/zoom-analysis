@@ -33,35 +33,30 @@ void zoom::offline_analyzer::add(const zoom::pkt& pkt) {
     }
 }
 
-zoom::offline_analyzer::streams_map::iterator zoom::offline_analyzer::_insert_new_stream(const zoom::rtp_stream_key& stream_key, const zoom::pkt& pkt) {
+zoom::offline_analyzer::streams_map::iterator zoom::offline_analyzer::_insert_new_stream(
+        const zoom::rtp_stream_key& stream_key, const zoom::pkt& pkt) {
 
     auto stream_meta = zoom::rtp_stream_meta::from_pkt(pkt);
 
-    auto frame_handler = [this](const stream_analyzer& a,
-                                const struct stream_analyzer::frame& f) -> void {
-
-        _frame_handler(a, f);
+    auto frame_handler = [this](const auto& analyzer, const auto& frame) {
+        _frame_handler(analyzer, frame);
     };
 
-    auto stats_handler = [this](const stream_analyzer& a, unsigned report_count,
-                                unsigned ts, const struct stream_analyzer::stats& c) -> void {
+    auto stats_handler = [this](const auto& analyzer, unsigned report_count,
+                                unsigned ts, const auto& stats) -> void {
 
-        _stats_handler(a, report_count, ts, c);
+        _stats_handler(analyzer, report_count, ts, stats);
     };
 
     // use 8,000 kHz for audio, 90,000 kHz for video
     auto sampling_rate = pkt.zoom_media_type == 15 ? 8000 : 90000;
 
-    stream_analyzer a(frame_handler, stats_handler, sampling_rate, stream_meta);
+    stream_analyzer analyzer(frame_handler, stats_handler, sampling_rate, stream_meta);
 
     const auto &[it, success]
-            = streams.emplace(stream_key, stream_state{.analyzer = std::move(a)});
+            = streams.emplace(stream_key, stream_state{.analyzer = std::move(analyzer)});
 
-    if (success) {
-        return it;
-    } else {
-        return streams.end();
-    }
+    return success ? it : streams.end();
 }
 
 void zoom::offline_analyzer::_frame_handler(const stream_analyzer& a,
