@@ -13,7 +13,7 @@ namespace zoom {
 
     static const unsigned STREAM_ANALYZER_BUF_LEN = 64;
 
-    using stream_analyzer = rtp_stream_analyzer<zoom::rtp_stream_meta,
+    using stream_analyzer = rtp_stream_analyzer<zoom::media_stream_key,
         zoom::rtp_pkt_meta, STREAM_ANALYZER_BUF_LEN>;
 
     struct stream_data {
@@ -42,7 +42,7 @@ namespace zoom {
 
         void _write_pkt_log(const zoom::pkt& pkt);
         void _write_frame_log(const stream_analyzer& a, const struct stream_analyzer::frame& frame);
-        void _write_stats_log(const zoom::rtp_stream_meta& m, unsigned report_count, unsigned ts,
+        void _write_stats_log(const zoom::media_stream_key& k, unsigned report_count, unsigned ts,
                               const struct stream_analyzer::stats& c);
 
         unsigned long _pkts_processed = 0;

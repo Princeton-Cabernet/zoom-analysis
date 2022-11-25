@@ -28,10 +28,9 @@ void zoom::analyzer::enable_stats_log(const std::string& file_path) {
 
     _stats_log.open(file_path);
 
-    _stats_log.stream << "#ts_s,report_count,ip_proto,ip_src,tp_src,ip_dst,tp_dst,media_type,ssrc,"
-                      << "pt,pkts,bytes,lost,duplicates,out_of_order,frames,mean_frame_len,"
+    _stats_log.stream << "ts_s,report_count,rtp_ssrc,media_type,stream_type,ip_src,tp_src,ip_dst,"
+                      << "tp_dst,pkts,bytes,lost,duplicate,out_of_order,frames,mean_frame_len,"
                       << "mean_jitter" << std::endl;
-
 }
 
 void zoom::analyzer::_log::open(const std::string& file_path) {

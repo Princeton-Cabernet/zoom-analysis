@@ -36,7 +36,7 @@ void zoom::offline_analyzer::add(const zoom::pkt& pkt) {
 zoom::offline_analyzer::media_streams_map::iterator zoom::offline_analyzer::_insert_new_stream(
         const zoom::media_stream_key& stream_key, const zoom::pkt& pkt) {
 
-    auto stream_meta = zoom::rtp_stream_meta::from_pkt(pkt);
+    // auto stream_meta = zoom::media_stream_meta::from_pkt(pkt);
 
     auto frame_handler = [this](const auto& analyzer, const auto& frame) {
         _frame_handler(analyzer, frame);
@@ -51,7 +51,7 @@ zoom::offline_analyzer::media_streams_map::iterator zoom::offline_analyzer::_ins
     // use 8,000 kHz for audio, 90,000 kHz for video
     auto sampling_rate = pkt.zoom_media_type == 15 ? 8000 : 90000;
 
-    stream_analyzer analyzer(frame_handler, stats_handler, sampling_rate, stream_meta);
+    stream_analyzer analyzer(frame_handler, stats_handler, sampling_rate, stream_key);
 
     const auto &[it, success] = _media_streams.emplace(stream_key, stream_data{
         .analyzer = std::move(analyzer)
@@ -164,7 +164,7 @@ void zoom::offline_analyzer::_write_frame_log(const stream_analyzer& a, const st
     _frame_log.stream
         << meta.ip_5t << ","
         << std::dec << (unsigned) meta.rtp_ssrc << ","
-        << std::dec << (unsigned) meta.rtp_pt << ","
+//        << std::dec << (unsigned) meta.rtp_pt << ","
         << std::dec << (unsigned) first_pkt->meta.pkt_type << ","
         << std::hex << std::setw(2) << std::setfill('0')
             << (unsigned) first_pkt->meta.rtp_ext1[0]
@@ -185,23 +185,32 @@ void zoom::offline_analyzer::_write_frame_log(const stream_analyzer& a, const st
         << std::endl;
 }
 
-void zoom::offline_analyzer::_write_stats_log(const zoom::rtp_stream_meta& m, unsigned report_count,
+void zoom::offline_analyzer::_write_stats_log(const zoom::media_stream_key& k, unsigned report_count,
                                               unsigned ts,
                                               const struct stream_analyzer::stats& c) {
 
     _stats_log.stream
         << ts << ","
         << report_count << ","
-        << m.ip_5t << ","
-        << std::dec << (unsigned) m.media_type << ","
-        << m.rtp_ssrc << ","
-        << std::dec << (unsigned) m.rtp_pt << ","
+
+        << k.rtp_ssrc << ","
+        << zoom::media_type_to_char(k.media_type) << ","
+        << zoom::stream_type_to_char(k.stream_type) << ","
+
+        << net::ipv4::addr_to_str(k.ip_5t.ip_src) << ","
+        << k.ip_5t.tp_src << ","
+        << net::ipv4::addr_to_str(k.ip_5t.ip_dst) << ","
+        << k.ip_5t.tp_dst << ","
+
         << std::dec << c.total_pkts << ","
         << std::dec << c.total_bytes << ","
+
         << std::dec << c.lost_pkts << ","
         << std::dec << c.duplicate_pkts << ","
         << std::dec << c.out_of_order_pkts << ","
+
         << std::dec << c.total_frames << ","
         << std::dec << c.mean_frame_size() << ","
-        << std::dec << c.mean_jitter() << std::endl;
+        << std::dec << c.mean_jitter()
+        << std::endl;
 }

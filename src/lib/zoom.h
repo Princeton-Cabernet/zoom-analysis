@@ -115,6 +115,7 @@ namespace zoom {
         bool operator==(const struct media_stream_key& a) const;
     };
 
+    /*
     struct rtp_stream_key {
         net::ipv4_5tuple ip_5t = {};
         std::uint32_t rtp_ssrc = 0;
@@ -125,16 +126,18 @@ namespace zoom {
         bool operator<(const struct rtp_stream_key& a) const;
         bool operator==(const struct rtp_stream_key& a) const;
     };
+    */
 
-    struct rtp_stream_meta {
+    /*
+    struct media_stream_meta {
         net::ipv4_5tuple ip_5t  = {};
         std::uint32_t rtp_ssrc  = 0;
-        std::uint8_t rtp_pt     = 0;
-        std::uint8_t media_type = 0;
+        media_type media_type;
+        stream_type stream_type;
 
-        static rtp_stream_meta from_pkt(const pkt& pkt);
+        static media_stream_meta from_pkt(const pkt& pkt);
     };
-
+    */
     struct rtp_pkt_meta {
         std::uint8_t rtp_ext1[3]  = {0, 0, 0};
         std::uint8_t pkt_type     = 0;

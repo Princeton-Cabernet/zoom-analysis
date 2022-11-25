@@ -55,6 +55,7 @@ bool zoom::media_stream_key::operator==(const struct media_stream_key& a) const 
         == std::tie(a.ip_5t, a.rtp_ssrc, a.media_type, a.stream_type);
 }
 
+/*
 zoom::rtp_stream_key zoom::rtp_stream_key::from_pkt(const zoom::pkt& pkt) {
 
     return {
@@ -75,6 +76,7 @@ bool zoom::rtp_stream_key::operator==(const struct rtp_stream_key& a) const {
     return std::tie(ip_5t, rtp_ssrc, rtp_pt)
            == std::tie(a.ip_5t, a.rtp_ssrc, a.rtp_pt);
 }
+*/
 
 zoom::pkt::pkt()
     : zoom_srv_type(0),
@@ -144,17 +146,29 @@ zoom::pkt::pkt(const struct zoom::headers& hdr, timeval tv, bool is_p2p) {
 
     std::memcpy(rtp_ext1, hdr.rtp_ext1, 3);
 }
+/*
+zoom::media_stream_meta zoom::media_stream_meta::from_pkt(const zoom::pkt& pkt) {
 
-zoom::rtp_stream_meta zoom::rtp_stream_meta::from_pkt(const zoom::pkt& pkt) {
+    enum media_type media_type;
 
-    return rtp_stream_meta {
-        .ip_5t      = pkt.ip_5t,
-        .rtp_ssrc   = pkt.proto.rtp.ssrc,
-        .rtp_pt     = pkt.proto.rtp.pt,
-        .media_type = pkt.zoom_media_type
+    if (pkt.zoom_media_type == zoom::AUDIO_TYPE) {
+        media_type = media_type::audio;
+    } else if (pkt.zoom_media_type == zoom::VIDEO_TYPE) {
+        media_type = media_type::video;
+    } else if (pkt.zoom_media_type == zoom::P2P_SCREEN_SHARE_TYPE
+               || pkt.zoom_media_type == zoom::SRV_SCREEN_SHARE_TYPE) {
+
+        media_type = media_type::screen;
+    }
+
+    return {
+        .ip_5t       = pkt.ip_5t,
+        .rtp_ssrc    = pkt.proto.rtp.ssrc,
+        .media_type  = media_type,
+        .stream_type = pkt.proto.rtp.pt == 110 ? stream_type::fec : stream_type::media
     };
 }
-
+*/
 struct zoom::headers zoom::parse_zoom_pkt_buf(const unsigned char* buf, bool includes_eth, bool is_p2p) {
 
     struct headers hdr;
