@@ -1,4 +1,3 @@
-
 #include "zoom_analyzer.h"
 
 void zoom::analyzer::enable_pkt_log(const std::string& file_path) {
