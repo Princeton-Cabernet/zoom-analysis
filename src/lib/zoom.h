@@ -95,25 +95,14 @@ namespace zoom {
         screen = 2
     };
 
-    static char media_type_to_char(media_type t) {
-        switch (t) {
-            case media_type::audio:  return 'a';
-            case media_type::video:  return 'v';
-            case media_type::screen: return 's';
-        }
-    }
+    static char media_type_to_char(media_type t);
 
     enum class stream_type : std::uint8_t {
         media = 0,
         fec   = 1
     };
 
-    static char stream_type_to_char(stream_type t) {
-        switch (t) {
-            case stream_type::media: return 'm';
-            case stream_type::fec:   return 'f';
-        }
-    }
+    static char stream_type_to_char(stream_type t);
 
     struct media_stream_key {
         net::ipv4_5tuple ip_5t = {};

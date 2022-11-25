@@ -1,5 +1,24 @@
 #include "zoom.h"
 
+char zoom::media_type_to_char(media_type t) {
+    switch (t) {
+        case media_type::audio:  return 'a';
+        case media_type::video:  return 'v';
+        case media_type::screen: return 's';
+    }
+
+    return '0';
+}
+
+char zoom::stream_type_to_char(stream_type t) {
+    switch (t) {
+        case stream_type::media: return 'm';
+        case stream_type::fec:   return 'f';
+    }
+
+    return '0';
+}
+
 zoom::media_stream_key zoom::media_stream_key::from_pkt(const pkt& pkt) {
 
     enum media_type media_type;

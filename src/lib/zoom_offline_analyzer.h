@@ -1,10 +1,11 @@
 #ifndef ZOOM_ANALYSIS_ZOOM_OFFLINE_ANALYZER_H
 #define ZOOM_ANALYSIS_ZOOM_OFFLINE_ANALYZER_H
 
+#include <map>
+
 #include "rtp_stream_analyzer.h"
 #include "zoom.h"
 #include "zoom_analyzer.h"
-#include "zoom_rtp_stream_tracker.h"
 
 namespace zoom {
 
@@ -17,8 +18,6 @@ namespace zoom {
 
     struct stream_data {
         stream_analyzer analyzer;
-        zoom::flow_tracker::flow_type flow_type;
-
     };
 
     using media_streams_map = std::map<zoom::media_stream_key, stream_data>;
@@ -47,7 +46,6 @@ namespace zoom {
                               const struct stream_analyzer::stats& c);
 
         unsigned long _pkts_processed = 0;
-//        zoom::rtp_stream_tracker _rtp_stream_tracker;
         media_streams_map _media_streams;
     };
 }

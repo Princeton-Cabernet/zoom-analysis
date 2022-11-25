@@ -10,9 +10,6 @@ void zoom::offline_analyzer::add(const zoom::pkt& pkt) {
 
     if (pkt.flags.rtp) {
 
-//        auto stream_data = _rtp_stream_tracker.track(pkt);
-//        auto stream_key = zoom::rtp_stream_key::from_pkt(pkt);
-
         auto key = zoom::media_stream_key::from_pkt(pkt);
 
         auto streams_it = _media_streams.find(key);
@@ -107,35 +104,6 @@ void zoom::offline_analyzer::write_streams_log() {
             << data.analyzer.stats().total_bytes
             << std::endl;
     }
-
-
-
-    /*
-    _streams_log.stream << "# ssrc,pl_type,ip_src,tp_src,ip_dst,tp_dst,flow_type,zoom_type,start_ts_s,"
-                << "start_ts_us,end_ts_s,end_ts_us,start_rtp_ts,last_rtp_ts,pkts,bytes" << std::endl;
-
-    for (const auto& [key, data]: _rtp_stream_tracker.streams()) {
-        for (const auto& flow: data.flows) {
-            _streams_log.stream
-                << key.rtp_ssrc << ","
-                << key.rtp_pl_type << ","
-                << net::ipv4::addr_to_str(flow.ip_5t.ip_src) << ","
-                << flow.ip_5t.tp_src << ","
-                << net::ipv4::addr_to_str(flow.ip_5t.ip_dst) << ","
-                << flow.ip_5t.tp_dst << ","
-                << zoom::flow_tracker::flow_type_string(flow.type) << ","
-                << data.zoom_type << ","
-                << flow.start_ts.tv_sec << ","
-                << flow.start_ts.tv_usec << ","
-                << flow.last_ts.tv_sec << ","
-                << flow.last_ts.tv_usec << ","
-                << std::dec << flow.start_rtp_ts << ","
-                << std::dec << flow.last_rtp_ts << ","
-                << flow.pkts << ","
-                << flow.bytes << std::endl;
-        }
-    }
-    */
 }
 
 void zoom::offline_analyzer::_write_pkt_log(const zoom::pkt& pkt) {
