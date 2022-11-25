@@ -28,8 +28,7 @@ set(ZOOM_ANALYSIS_LIB_SRC
     lib/zoom_analyzer.h lib/zoom_analyzer.cc
     lib/zoom_flow_tracker.h lib/zoom_flow_tracker.cc
     lib/zoom_nets.h
-    lib/zoom_offline_analyzer.h lib/zoom_offline_analyzer.cc
-    lib/zoom_rtp_stream_tracker.h lib/zoom_rtp_stream_tracker.cc)
+    lib/zoom_offline_analyzer.h lib/zoom_offline_analyzer.cc)
 
 
 list(TRANSFORM ZOOM_ANALYSIS_LIB_PCAP_SRC PREPEND src/)

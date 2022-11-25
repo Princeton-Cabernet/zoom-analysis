@@ -45,6 +45,26 @@ public:
         struct pkt pkts[Len]  = {};
     };
 
+    struct timestamps {
+        std::uint32_t first_rtp = 0, last_rtp = 0;
+        timeval first_timeval = { 0, 0 }, last_timeval = { 0, 0 };
+
+        void update(std::uint32_t rtp_ts, timeval ts) {
+
+            if (first_rtp == 0 || rtp_ts < first_rtp)
+                first_rtp = rtp_ts;
+
+            if (last_rtp == 0 || rtp_ts > last_rtp)
+                last_rtp = rtp_ts;
+
+            if ((first_timeval.tv_sec == 0 && first_timeval.tv_usec == 0) || ts < first_timeval)
+                first_timeval = ts;
+
+            if ((last_timeval.tv_sec == 0 && last_timeval.tv_usec == 0) || ts > last_timeval)
+                last_timeval = ts;
+        }
+    };
+
     struct stats {
         unsigned long total_pkts        = 0;
         unsigned long total_bytes       = 0;
@@ -115,6 +135,8 @@ public:
     void add(std::uint16_t rtp_seq, std::uint32_t rtp_ts, const timeval& ts, unsigned pl_len,
              const PacketMeta& meta) {
 
+        _timestamps.update(rtp_ts, ts);
+
         if (_counters.total_pkts == 0) { // initial entry
             _ring[0] = {
                 .empty = false, .seen = true, .rtp_seq = rtp_seq, .rtp_ts = rtp_ts, .ts = ts,
@@ -180,6 +202,10 @@ public:
 
     const struct stats& stats() const {
         return _counters;
+    }
+
+    const struct timestamps& timestamps() const {
+        return _timestamps;
     }
 
     void flush() {
@@ -329,6 +355,7 @@ private:
     unsigned _current_ts_s = 0;
     unsigned _stats_report_count = 0;
     struct stats _current_ts_counters = {};
+    struct timestamps _timestamps;
 };
 
 #endif

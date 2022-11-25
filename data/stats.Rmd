@@ -18,12 +18,8 @@ knitr::opts_chunk$set(dev = c("png", "pdf"), fig.width = 9, fig.height = 4.5,
 
 ```{R import}
 stats <- read_csv(params$input_file, comment = "#",
-                    col_types = "niicicifnfnnnnnnnn", 
-                    col_names = c("ts_s","report_count", "ip_proto","ip_src",
-                                  "tp_src","ip_dst", "tp_dst","media_type",
-                                  "ssrc","pt","pkts", "bytes","lost",
-                                  "duplicates","out_of_order", "frames",
-                                  "mean_frame_len", "mean_frame_jitter")) %>%
+                    col_types = "niiffciciiiiiiinn", 
+                    col_names = TRUE) %>%
   arrange(ts_s)
 ```
 
@@ -31,7 +27,7 @@ stats <- read_csv(params$input_file, comment = "#",
 
 ```{r overview}
 stats %>%
-  group_by(media_type, pt) %>%
+  group_by(media_type, stream_type) %>%
   summarize(
     samples   = n(),
     pkts      = sum(pkts),
@@ -44,7 +40,6 @@ stats %>%
 
 ```{r}
 rates <- stats %>%
-  filter(media_type %in% c(13, 15, 16)) %>%
   group_by(ts_s, media_type) %>%
   summarize(pkts = sum(pkts), bytes = sum(bytes), .groups = 'drop') %>%
   mutate(time_local = as_datetime(ts_s - 14400))
@@ -58,7 +53,7 @@ rates %>%
                        color = media_type)) +
     labs(x = "Time", y = "Packet Rate [Kpps]", color = "Media Type") +
     scale_color_manual(
-      values=c("16" = "steelblue4", "15" = "red4", "13" = "green4"),
+      values=c("v" = "steelblue4", "a" = "red4", "s" = "green4"),
       labels = c("Video", "Audio", "Screen Share")) +
     geom_line() +
     theme_om() +
@@ -78,7 +73,7 @@ rates %>%
                        color = media_type)) +
     labs(x = "Time", y = "Bitrate [Mbit/s]", color = "Media Type") +
     scale_color_manual(
-      values=c("16" = "steelblue4", "15" = "red4", "13" = "green4"),
+      values=c("v" = "steelblue4", "a" = "red4", "s" = "green4"),
       labels = c("Video", "Audio", "Screen Share")) +
     geom_line() +
     theme_om() +
@@ -92,11 +87,9 @@ rates %>%
 
 ```{r}
 stats %<>%
-  filter(media_type == 13 | media_type == 15 | media_type == 16) %>%
-  filter(pt %in% c(99, 98, 112)) %>%
+  filter(stream_type == "m") %>%
   filter(report_count >= 4)
 ```
-
 
 
 # Distributions
@@ -109,7 +102,7 @@ stats %<>%
     scale_x_continuous(limits=c(0, 1.1), breaks=c(0, 0.25, 0.5, 0.75, 1)) +
     labs(x = "Bitrate [Mbit/s]", y = "CDF", color = "") +
     scale_color_manual(
-      values=c("15" = "red4", "13" = "green4","16" = "steelblue4"),
+      values=c("a" = "red4", "s" = "green4", "v" = "steelblue4"),
       labels = c("Audio", "Screen Share", "Video")) +
     stat_ecdf() +
     theme_om() +
@@ -125,18 +118,17 @@ stats %<>%
 
 ```{r stats-frame-rate-cdf, fig.width = 2.4, fig.height = 1.8}
 stats %>%
-  filter((media_type == 13 | media_type == 16) & (pt == 98 | pt == 99)) %>%
   ggplot(aes(x = frames, color = media_type)) +
     labs(x = "Frame Rate [fps]", y = "CDF") +
     scale_color_manual(
-      values=c("13" = "green4", "16" = "steelblue4"),
-      labels = c("Screen Share", "Video")) +
+      values=c("a" = "red4", "s" = "green4", "v" = "steelblue4"),
+      labels = c("Audio", "Screen Share", "Video")) +
     xlim(0, 33) +
     stat_ecdf() +
     theme_om() +
     theme(
       legend.title = element_blank(),
-      legend.position = c(0.98, 0.2),
+      legend.position = c(0.55, 0.7),
       legend.margin = margin(0, 0, 0, 0),
       legend.spacing.x = unit(0, "mm"),
       legend.spacing.y = unit(0, "mm"))
@@ -146,11 +138,10 @@ stats %>%
 
 ```{r stats-frame-size-cdf, fig.width = 2.4, fig.height = 1.8}
 stats %>%
-  filter((media_type == 13 | media_type == 16) & (pt == 98 | pt == 99)) %>%
   ggplot(aes(x = mean_frame_len, color = media_type)) +
     labs(x = "Frame Size [byte]", y = "CDF") +
     scale_color_manual(
-      values=c("13" = "green4", "16" = "steelblue4"),
+      values=c("s" = "green4", "v" = "steelblue4"),
       labels = c("Screen Share", "Video")) +
     xlim(0, 12500) +
     stat_ecdf() +
@@ -167,13 +158,12 @@ stats %>%
 
 ```{r stats-jitter-cdf, fig.width = 2.4, fig.height = 1.8}
  stats %>%
-  filter((media_type == 16) & (pt == 98)) %>%
-  ggplot(aes(x = mean_frame_jitter, color = media_type)) +
+  ggplot(aes(x = mean_jitter, color = media_type)) +
     scale_x_continuous(limits=c(0, 80)) +
     labs(x = "Frame-level Jitter [ms]", y = "CDF", color = "") +
     scale_color_manual(
-      values=c("16" = "steelblue4"),
-      labels = c("Video")) +
+      values=c("a" = "red4", "v" = "steelblue4"),
+      labels = c("Audio", "Video")) +
     stat_ecdf() +
     theme_om() +
     theme(

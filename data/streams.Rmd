@@ -16,18 +16,28 @@ knitr::opts_chunk$set(dev = c("png", "pdf"), fig.width = 9, fig.height = 4.5,
   fig.align = "center", fig.keep = "high", fig.path = params$fig_path)
 ```
 
+### Notes
+
+**media_type:**
+
+* v: video
+* a: audio
+* s: screen share
+
+**stream_type:**
+
+* m: media stream
+* f: forward error correction stream
+
 ```{R import}
 streams <- read_csv(params$input_file, comment = "#",
-                    col_types = "niciciffnnnnnn", 
-                    col_names = c("rtp_ssrc", "rtp_pl", "ip_src", "tp_src",
-                                  "ip_dst", "tp_dst", "flow_type", "zoom_type",
-                                  "start_ts_s", "start_ts_us", "end_ts_s",
-                                  "end_ts_us", "start_rtp_ts", "end_rtp_ts",
-                                  "pkts", "bytes"))
+                    col_types = "nffcicinnnnnnnn", col_names = TRUE)
 ```
 
+
+
 ```{r}
-streams %>% group_by(rtp_ssrc, ip_src, ip_dst, tp_src, tp_dst) %>%
+streams %>% group_by(rtp_ssrc, ip_src, ip_dst, tp_src, tp_dst, media_type) %>%
   summarize(substreams = n(), .groups = "drop")
 ```
 
@@ -47,22 +57,23 @@ totals %>% as_tibble_row()
 
 ```{r overview}
 streams %>%
-  group_by(zoom_type, rtp_pl) %>%
+  group_by(media_type, stream_type) %>%
   summarize(n = n(), pkts = sum(pkts), bytes = sum(bytes), .groups = 'drop')
 ```
 
 
 ```{r streams-stream-dur, fig.width = 2.6, fig.height = 2.0}
-streams %>% filter(zoom_type %in% c(13,15,16)) %>%
+streams %>%
+  filter(stream_type == 'm') %>%
   mutate(dur_min = (end_ts_s - start_ts_s) / 60) %>%
   filter(dur_min > 0) %>%
-  ggplot(aes(x=dur_min, color=zoom_type)) +
-    scale_x_continuous(limits=c(0, 120), breaks=c(0, 30, 60, 90, 120)) +
+  ggplot(aes(x=dur_min, color=media_type)) +
+    scale_x_continuous(limits=c(0, 30), breaks=c(0, 5, 10, 15, 20, 25, 30)) +
     labs(x="Stream Duration [min.]", y="CDF", color="Media Type") +
     stat_ecdf() +
     theme(
       legend.title = element_blank(),
-      legend.position = c(0.8, 0.2),
+      legend.position = c(0.9, 0.2),
       legend.margin = margin(0, 0, 0, 0),
       legend.spacing.x = unit(0, "mm"),
       legend.spacing.y = unit(0, "mm"))

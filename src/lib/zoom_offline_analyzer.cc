@@ -1,4 +1,3 @@
-
 #include "zoom_offline_analyzer.h"
 
 void zoom::offline_analyzer::add(const zoom::pkt& pkt) {
@@ -11,38 +10,13 @@ void zoom::offline_analyzer::add(const zoom::pkt& pkt) {
 
     if (pkt.flags.rtp) {
 
-        auto stream_data = _rtp_stream_tracker.track(pkt);
-        auto stream_key = zoom::rtp_stream_key::from_pkt(pkt);
-        auto streams_it = streams.find(stream_key);
+        auto key = zoom::media_stream_key::from_pkt(pkt);
 
-        if (streams_it == streams.end()) {
+        auto streams_it = _media_streams.find(key);
 
-            auto stream_meta = zoom::rtp_stream_meta::from_pkt(pkt);
+        if (streams_it == _media_streams.end()) {
 
-            auto frame_handler = [this](const stream_analyzer& a,
-                const struct stream_analyzer::frame& f) -> void {
-
-                if (_frame_log.enabled)
-                    _write_frame_log(a, f);
-            };
-
-            auto stats_handler = [this](const stream_analyzer& a, unsigned report_count,
-                    unsigned ts, const struct stream_analyzer::stats& c) -> void {
-
-                if (_stats_log.enabled)
-                    _write_stats_log(a.meta(), report_count, ts, c);
-            };
-
-            // use 8,000 kHz for audio, 90,000 kHz for video
-            auto sampling_rate = pkt.zoom_media_type == 15 ? 8000 : 90000;
-            stream_analyzer a(frame_handler, stats_handler, sampling_rate, stream_meta);
-
-            const auto &[it, success]
-                    = streams.emplace(stream_key, stream_state{.analyzer = std::move(a)});
-
-            if (success) {
-                streams_it = it;
-            } else {
+            if ((streams_it = _insert_new_stream(key, pkt)) == _media_streams.end()) {
                 std::cerr << "error: failed setting up stream state, exiting." << std::endl;
                 return;
             }
@@ -59,31 +33,76 @@ void zoom::offline_analyzer::add(const zoom::pkt& pkt) {
     }
 }
 
+zoom::offline_analyzer::media_streams_map::iterator zoom::offline_analyzer::_insert_new_stream(
+        const zoom::media_stream_key& stream_key, const zoom::pkt& pkt) {
+
+    // auto stream_meta = zoom::media_stream_meta::from_pkt(pkt);
+
+    auto frame_handler = [this](const auto& analyzer, const auto& frame) {
+        _frame_handler(analyzer, frame);
+    };
+
+    auto stats_handler = [this](const auto& analyzer, unsigned report_count,
+                                unsigned ts, const auto& stats) -> void {
+
+        _stats_handler(analyzer, report_count, ts, stats);
+    };
+
+    // use 8,000 kHz for audio, 90,000 kHz for video
+    auto sampling_rate = pkt.zoom_media_type == 15 ? 8000 : 90000;
+
+    stream_analyzer analyzer(frame_handler, stats_handler, sampling_rate, stream_key);
+
+    const auto &[it, success] = _media_streams.emplace(stream_key, stream_data{
+        .analyzer = std::move(analyzer)
+    });
+
+    return success ? it : _media_streams.end();
+}
+
+void zoom::offline_analyzer::_frame_handler(const stream_analyzer& a,
+                                            const struct stream_analyzer::frame& f) {
+
+    if (_frame_log.enabled)
+        _write_frame_log(a, f);
+}
+
+void zoom::offline_analyzer::_stats_handler(const stream_analyzer& a, unsigned report_count,
+                                            unsigned ts, const struct stream_analyzer::stats& c) {
+
+    if (_stats_log.enabled)
+        _write_stats_log(a.meta(), report_count, ts, c);
+}
+
 void zoom::offline_analyzer::write_streams_log() {
 
-    _streams_log.stream << "# ssrc,pl_type,ip_src,tp_src,ip_dst,tp_dst,flow_type,zoom_type,start_ts_s,"
-                << "start_ts_us,end_ts_s,end_ts_us,start_rtp_ts,last_rtp_ts,pkts,bytes" << std::endl;
+    _streams_log.stream << "rtp_ssrc,media_type,stream_type,ip_src,tp_src,ip_dst,tp_dst,"
+                        << "start_ts_s,start_ts_us,end_ts_s,end_ts_us,start_rtp_ts,end_rtp_ts,"
+                        << "pkts,bytes" << std::endl;
 
-    for (const auto& [key, data]: _rtp_stream_tracker.streams()) {
-        for (const auto& flow: data.flows) {
-            _streams_log.stream
-                << key.rtp_ssrc << ","
-                << key.rtp_pl_type << ","
-                << net::ipv4::addr_to_str(flow.ip_5t.ip_src) << ","
-                << flow.ip_5t.tp_src << ","
-                << net::ipv4::addr_to_str(flow.ip_5t.ip_dst) << ","
-                << flow.ip_5t.tp_dst << ","
-                << zoom::flow_tracker::flow_type_string(flow.type) << ","
-                << data.zoom_type << ","
-                << flow.start_ts.tv_sec << ","
-                << flow.start_ts.tv_usec << ","
-                << flow.last_ts.tv_sec << ","
-                << flow.last_ts.tv_usec << ","
-                << std::dec << flow.start_rtp_ts << ","
-                << std::dec << flow.last_rtp_ts << ","
-                << flow.pkts << ","
-                << flow.bytes << std::endl;
-        }
+    for (const auto& [key, data]: _media_streams) {
+
+        _streams_log.stream
+            << key.rtp_ssrc << ","
+            << zoom::media_type_to_char(key.media_type) << ","
+            << zoom::stream_type_to_char(key.stream_type) << ","
+
+            << net::ipv4::addr_to_str(key.ip_5t.ip_src) << ","
+            << key.ip_5t.tp_src << ","
+            << net::ipv4::addr_to_str(key.ip_5t.ip_dst) << ","
+            << key.ip_5t.tp_dst << ","
+
+            << data.analyzer.timestamps().first_timeval.tv_sec << ","
+            << data.analyzer.timestamps().first_timeval.tv_usec << ","
+            << data.analyzer.timestamps().last_timeval.tv_sec << ","
+            << data.analyzer.timestamps().last_timeval.tv_usec << ","
+
+            << data.analyzer.timestamps().first_rtp << ","
+            << data.analyzer.timestamps().last_rtp << ","
+
+            << data.analyzer.stats().total_pkts << ","
+            << data.analyzer.stats().total_bytes
+            << std::endl;
     }
 }
 
@@ -145,7 +164,7 @@ void zoom::offline_analyzer::_write_frame_log(const stream_analyzer& a, const st
     _frame_log.stream
         << meta.ip_5t << ","
         << std::dec << (unsigned) meta.rtp_ssrc << ","
-        << std::dec << (unsigned) meta.rtp_pt << ","
+//        << std::dec << (unsigned) meta.rtp_pt << ","
         << std::dec << (unsigned) first_pkt->meta.pkt_type << ","
         << std::hex << std::setw(2) << std::setfill('0')
             << (unsigned) first_pkt->meta.rtp_ext1[0]
@@ -166,42 +185,32 @@ void zoom::offline_analyzer::_write_frame_log(const stream_analyzer& a, const st
         << std::endl;
 }
 
-void zoom::offline_analyzer::_write_stats_log(const zoom::rtp_stream_meta& m, unsigned report_count,
+void zoom::offline_analyzer::_write_stats_log(const zoom::media_stream_key& k, unsigned report_count,
                                               unsigned ts,
                                               const struct stream_analyzer::stats& c) {
 
     _stats_log.stream
         << ts << ","
         << report_count << ","
-        << m.ip_5t << ","
-        << std::dec << (unsigned) m.media_type << ","
-        << m.rtp_ssrc << ","
-        << std::dec << (unsigned) m.rtp_pt << ","
+
+        << k.rtp_ssrc << ","
+        << zoom::media_type_to_char(k.media_type) << ","
+        << zoom::stream_type_to_char(k.stream_type) << ","
+
+        << net::ipv4::addr_to_str(k.ip_5t.ip_src) << ","
+        << k.ip_5t.tp_src << ","
+        << net::ipv4::addr_to_str(k.ip_5t.ip_dst) << ","
+        << k.ip_5t.tp_dst << ","
+
         << std::dec << c.total_pkts << ","
         << std::dec << c.total_bytes << ","
+
         << std::dec << c.lost_pkts << ","
         << std::dec << c.duplicate_pkts << ","
         << std::dec << c.out_of_order_pkts << ","
+
         << std::dec << c.total_frames << ","
         << std::dec << c.mean_frame_size() << ","
-        << std::dec << c.mean_jitter() << std::endl;
+        << std::dec << c.mean_jitter()
+        << std::endl;
 }
-
-//bool zoom::offline_analyzer::_has_stream(const zoom::rtp_stream_key& key) const {
-//
-//    return streams.find(key) != streams.end();
-//}
-//
-//zoom::offline_analyzer::stream_state&
-//    zoom::offline_analyzer::_get_stream(const zoom::rtp_stream_key& key) {
-//
-//    auto it = streams.find(key);
-//
-//    if (it == streams.end())
-//        throw std::logic_error("stream not tracked");
-//
-//    return it->second;
-//}
-//
-//zoom::offline_analyzer::stream_state&
-//    zoom::offline_analyzer::_init_stream(const zoom::rtp_stream_key& key) { }
