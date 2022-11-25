@@ -95,14 +95,14 @@ namespace zoom {
         screen = 2
     };
 
-    static char media_type_to_char(media_type t);
+    char media_type_to_char(media_type t);
 
     enum class stream_type : std::uint8_t {
         media = 0,
         fec   = 1
     };
 
-    static char stream_type_to_char(stream_type t);
+    char stream_type_to_char(stream_type t);
 
     struct media_stream_key {
         net::ipv4_5tuple ip_5t = {};

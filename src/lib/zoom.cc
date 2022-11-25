@@ -1,6 +1,7 @@
 #include "zoom.h"
 
-char zoom::media_type_to_char(media_type t) {
+char zoom::media_type_to_char(zoom::media_type t) {
+
     switch (t) {
         case media_type::audio:  return 'a';
         case media_type::video:  return 'v';
@@ -10,7 +11,8 @@ char zoom::media_type_to_char(media_type t) {
     return '0';
 }
 
-char zoom::stream_type_to_char(stream_type t) {
+char zoom::stream_type_to_char(zoom::stream_type t) {
+
     switch (t) {
         case stream_type::media: return 'm';
         case stream_type::fec:   return 'f';
