@@ -1,16 +1,58 @@
-
 #include "zoom.h"
+
+zoom::media_stream_key zoom::media_stream_key::from_pkt(const pkt& pkt) {
+
+    enum media_type media_type;
+
+    if (pkt.zoom_media_type == zoom::AUDIO_TYPE) {
+        media_type = media_type::audio;
+    } else if (pkt.zoom_media_type == zoom::VIDEO_TYPE) {
+        media_type = media_type::video;
+    } else if (pkt.zoom_media_type == zoom::P2P_SCREEN_SHARE_TYPE
+        || pkt.zoom_media_type == zoom::SRV_SCREEN_SHARE_TYPE) {
+
+        media_type = media_type::screen;
+    }
+
+    return {
+        .ip_5t       = pkt.ip_5t,
+        .rtp_ssrc    = pkt.proto.rtp.ssrc,
+        .media_type  = media_type,
+        .stream_type = pkt.proto.rtp.pt == 110 ? stream_type::fec : stream_type::media
+    };
+}
+
+bool zoom::media_stream_key::operator<(const struct media_stream_key& a) const {
+
+    return std::tie(ip_5t, rtp_ssrc, media_type, stream_type)
+        < std::tie(a.ip_5t, a.rtp_ssrc, a.media_type, a.stream_type);
+}
+
+bool zoom::media_stream_key::operator==(const struct media_stream_key& a) const {
+
+    return std::tie(ip_5t, rtp_ssrc, media_type, stream_type)
+        == std::tie(a.ip_5t, a.rtp_ssrc, a.media_type, a.stream_type);
+}
+
+zoom::rtp_stream_key zoom::rtp_stream_key::from_pkt(const zoom::pkt& pkt) {
+
+    return {
+        .ip_5t    = pkt.ip_5t,
+        .rtp_ssrc = pkt.proto.rtp.ssrc,
+        .rtp_pt   = pkt.proto.rtp.pt,
+    };
+}
 
 bool zoom::rtp_stream_key::operator<(const struct rtp_stream_key& a) const {
 
-    return std::tie(ip_5t, rtp_ssrc, rtp_pl_type)
-           < std::tie(a.ip_5t, a.rtp_ssrc, a.rtp_pl_type);
+    return std::tie(ip_5t, rtp_ssrc, rtp_pt)
+           < std::tie(a.ip_5t, a.rtp_ssrc, a.rtp_pt);
 }
 
 bool zoom::rtp_stream_key::operator==(const struct rtp_stream_key& a) const {
 
-    return std::tie(ip_5t, rtp_ssrc, rtp_pl_type)
-           == std::tie(a.ip_5t, a.rtp_ssrc, a.rtp_pl_type);
+    return std::tie(ip_5t, rtp_ssrc, rtp_pt)
+           == std::tie(a.ip_5t, a.rtp_ssrc, a.rtp_pt);
 }
 
 zoom::pkt::pkt()
@@ -80,6 +122,16 @@ zoom::pkt::pkt(const struct zoom::headers& hdr, timeval tv, bool is_p2p) {
     }
 
     std::memcpy(rtp_ext1, hdr.rtp_ext1, 3);
+}
+
+zoom::rtp_stream_meta zoom::rtp_stream_meta::from_pkt(const zoom::pkt& pkt) {
+
+    return rtp_stream_meta {
+        .ip_5t      = pkt.ip_5t,
+        .rtp_ssrc   = pkt.proto.rtp.ssrc,
+        .rtp_pt     = pkt.proto.rtp.pt,
+        .media_type = pkt.zoom_media_type
+    };
 }
 
 struct zoom::headers zoom::parse_zoom_pkt_buf(const unsigned char* buf, bool includes_eth, bool is_p2p) {
@@ -171,23 +223,4 @@ struct zoom::headers zoom::parse_zoom_pkt_buf(const unsigned char* buf, bool inc
     }
 
     return hdr;
-}
-
-struct zoom::rtp_stream_key zoom::get_stream_key(const headers& hdr) {
-
-    if (!hdr.rtp) {
-        throw std::runtime_error("get_stream_key: no rtp header present");
-    }
-
-    return rtp_stream_key {
-        .ip_5t = {
-            ntohl(hdr.ip->src_addr),
-            ntohl(hdr.ip->dst_addr),
-            ntohs(hdr.udp->src_port),
-            ntohs(hdr.udp->dst_port),
-            hdr.ip->next_proto_id
-        },
-        .rtp_ssrc    = ntohl(hdr.rtp->ssrc),
-        .rtp_pl_type = (std::uint8_t) hdr.rtp->payload_type()
-    };
 }

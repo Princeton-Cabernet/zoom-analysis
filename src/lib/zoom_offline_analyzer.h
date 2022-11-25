@@ -15,11 +15,13 @@ namespace zoom {
     using stream_analyzer = rtp_stream_analyzer<zoom::rtp_stream_meta,
         zoom::rtp_pkt_meta, STREAM_ANALYZER_BUF_LEN>;
 
-    struct stream_state {
+    struct stream_data {
         stream_analyzer analyzer;
+        zoom::flow_tracker::flow_type flow_type;
+
     };
 
-    using streams_map = std::map<zoom::rtp_stream_key, stream_state>;
+    using media_streams_map = std::map<zoom::media_stream_key, stream_data>;
 
     public:
 
@@ -32,7 +34,8 @@ namespace zoom {
 
     private:
 
-        streams_map::iterator _insert_new_stream(const zoom::rtp_stream_key& key, const zoom::pkt& pkt);
+        media_streams_map::iterator _insert_new_stream(const zoom::media_stream_key& key,
+                                                       const zoom::pkt& pkt);
 
         void _frame_handler(const stream_analyzer& a, const struct stream_analyzer::frame& f);
         void _stats_handler(const stream_analyzer& a, unsigned report_count,
@@ -44,9 +47,8 @@ namespace zoom {
                               const struct stream_analyzer::stats& c);
 
         unsigned long _pkts_processed = 0;
-        zoom::rtp_stream_tracker _rtp_stream_tracker;
-        zoom::rtp_stream_tracker rtp_stream_tracker;
-        streams_map streams;
+//        zoom::rtp_stream_tracker _rtp_stream_tracker;
+        media_streams_map _media_streams;
     };
 }
 

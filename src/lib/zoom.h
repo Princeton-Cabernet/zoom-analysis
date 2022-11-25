@@ -1,4 +1,3 @@
-
 #ifndef ZOOM_ANALYSIS_ZOOM_H
 #define ZOOM_ANALYSIS_ZOOM_H
 
@@ -90,39 +89,61 @@ namespace zoom {
 
     static_assert(sizeof(struct zoom::pkt) == 56);
 
-    struct rtp_stream_key {
-        net::ipv4_5tuple ip_5t    = {};
-        std::uint32_t rtp_ssrc    = 0;
-        std::uint8_t  rtp_pl_type = 0;
+    enum class media_type : std::uint8_t {
+        audio  = 0,
+        video  = 1,
+        screen = 2
+    };
 
-        static rtp_stream_key from_pkt(const pkt& pkt) {
-
-            return rtp_stream_key{
-                .ip_5t       = pkt.ip_5t,
-                .rtp_ssrc    = pkt.proto.rtp.ssrc,
-                .rtp_pl_type = pkt.proto.rtp.pt,
-            };
+    static char media_type_to_char(media_type t) {
+        switch (t) {
+            case media_type::audio:  return 'a';
+            case media_type::video:  return 'v';
+            case media_type::screen: return 's';
         }
+    }
+
+    enum class stream_type : std::uint8_t {
+        media = 0,
+        fec   = 1
+    };
+
+    static char stream_type_to_char(stream_type t) {
+        switch (t) {
+            case stream_type::media: return 'm';
+            case stream_type::fec:   return 'f';
+        }
+    }
+
+    struct media_stream_key {
+        net::ipv4_5tuple ip_5t = {};
+        std::uint32_t rtp_ssrc = 0;
+        enum media_type media_type;
+        enum stream_type stream_type;
+
+        static media_stream_key from_pkt(const pkt& pkt);
+        bool operator<(const struct media_stream_key& a) const;
+        bool operator==(const struct media_stream_key& a) const;
+    };
+
+    struct rtp_stream_key {
+        net::ipv4_5tuple ip_5t = {};
+        std::uint32_t rtp_ssrc = 0;
+        std::uint8_t  rtp_pt   = 0;
+
+        static rtp_stream_key from_pkt(const pkt& pkt);
 
         bool operator<(const struct rtp_stream_key& a) const;
         bool operator==(const struct rtp_stream_key& a) const;
     };
 
     struct rtp_stream_meta {
-        net::ipv4_5tuple ip_5t = {};
-        std::uint32_t rtp_ssrc = 0;
-        std::uint8_t rtp_pt    = 0;
+        net::ipv4_5tuple ip_5t  = {};
+        std::uint32_t rtp_ssrc  = 0;
+        std::uint8_t rtp_pt     = 0;
         std::uint8_t media_type = 0;
 
-        static rtp_stream_meta from_pkt(const pkt& pkt) {
-
-            return rtp_stream_meta{
-                .ip_5t      = pkt.ip_5t,
-                .rtp_ssrc   = pkt.proto.rtp.ssrc,
-                .rtp_pt     = pkt.proto.rtp.pt,
-                .media_type = pkt.zoom_media_type
-            };
-        }
+        static rtp_stream_meta from_pkt(const pkt& pkt);
     };
 
     struct rtp_pkt_meta {
@@ -131,10 +152,8 @@ namespace zoom {
         unsigned pkts_hint        = 0;
     };
 
-    [[nodiscard]] struct headers parse_zoom_pkt_buf(const unsigned char* buf, bool includes_eth = true,
-                                                    bool is_p2p = false);
-
-    [[nodiscard]] struct rtp_stream_key get_stream_key(const headers& hdr);
+    [[nodiscard]] struct headers parse_zoom_pkt_buf(const unsigned char* buf,
+            bool includes_eth = true, bool is_p2p = false);
 }
 
 #endif

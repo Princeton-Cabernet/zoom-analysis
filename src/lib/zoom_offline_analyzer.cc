@@ -10,13 +10,16 @@ void zoom::offline_analyzer::add(const zoom::pkt& pkt) {
 
     if (pkt.flags.rtp) {
 
-        auto stream_data = _rtp_stream_tracker.track(pkt);
-        auto stream_key = zoom::rtp_stream_key::from_pkt(pkt);
-        auto streams_it = streams.find(stream_key);
+//        auto stream_data = _rtp_stream_tracker.track(pkt);
+//        auto stream_key = zoom::rtp_stream_key::from_pkt(pkt);
 
-        if (streams_it == streams.end()) {
+        auto key = zoom::media_stream_key::from_pkt(pkt);
 
-            if ((streams_it = _insert_new_stream(stream_key, pkt)) == streams.end()) {
+        auto streams_it = _media_streams.find(key);
+
+        if (streams_it == _media_streams.end()) {
+
+            if ((streams_it = _insert_new_stream(key, pkt)) == _media_streams.end()) {
                 std::cerr << "error: failed setting up stream state, exiting." << std::endl;
                 return;
             }
@@ -33,8 +36,8 @@ void zoom::offline_analyzer::add(const zoom::pkt& pkt) {
     }
 }
 
-zoom::offline_analyzer::streams_map::iterator zoom::offline_analyzer::_insert_new_stream(
-        const zoom::rtp_stream_key& stream_key, const zoom::pkt& pkt) {
+zoom::offline_analyzer::media_streams_map::iterator zoom::offline_analyzer::_insert_new_stream(
+        const zoom::media_stream_key& stream_key, const zoom::pkt& pkt) {
 
     auto stream_meta = zoom::rtp_stream_meta::from_pkt(pkt);
 
@@ -53,10 +56,11 @@ zoom::offline_analyzer::streams_map::iterator zoom::offline_analyzer::_insert_ne
 
     stream_analyzer analyzer(frame_handler, stats_handler, sampling_rate, stream_meta);
 
-    const auto &[it, success]
-            = streams.emplace(stream_key, stream_state{.analyzer = std::move(analyzer)});
+    const auto &[it, success] = _media_streams.emplace(stream_key, stream_data{
+        .analyzer = std::move(analyzer)
+    });
 
-    return success ? it : streams.end();
+    return success ? it : _media_streams.end();
 }
 
 void zoom::offline_analyzer::_frame_handler(const stream_analyzer& a,
@@ -75,6 +79,38 @@ void zoom::offline_analyzer::_stats_handler(const stream_analyzer& a, unsigned r
 
 void zoom::offline_analyzer::write_streams_log() {
 
+    _streams_log.stream << "rtp_ssrc,media_type,stream_type,ip_src,tp_src,ip_dst,tp_dst,"
+                        << "start_ts_s,start_ts_us,end_ts_s,end_ts_us,start_rtp_ts,end_rtp_ts,"
+                        << "pkts,bytes" << std::endl;
+
+    for (const auto& [key, data]: _media_streams) {
+
+        _streams_log.stream
+            << key.rtp_ssrc << ","
+            << zoom::media_type_to_char(key.media_type) << ","
+            << zoom::stream_type_to_char(key.stream_type) << ","
+
+            << net::ipv4::addr_to_str(key.ip_5t.ip_src) << ","
+            << key.ip_5t.tp_src << ","
+            << net::ipv4::addr_to_str(key.ip_5t.ip_dst) << ","
+            << key.ip_5t.tp_dst << ","
+
+            << data.analyzer.timestamps().first_timeval.tv_sec << ","
+            << data.analyzer.timestamps().first_timeval.tv_usec << ","
+            << data.analyzer.timestamps().last_timeval.tv_sec << ","
+            << data.analyzer.timestamps().last_timeval.tv_usec << ","
+
+            << data.analyzer.timestamps().first_rtp << ","
+            << data.analyzer.timestamps().last_rtp << ","
+
+            << data.analyzer.stats().total_pkts << ","
+            << data.analyzer.stats().total_bytes
+            << std::endl;
+    }
+
+
+
+    /*
     _streams_log.stream << "# ssrc,pl_type,ip_src,tp_src,ip_dst,tp_dst,flow_type,zoom_type,start_ts_s,"
                 << "start_ts_us,end_ts_s,end_ts_us,start_rtp_ts,last_rtp_ts,pkts,bytes" << std::endl;
 
@@ -99,6 +135,7 @@ void zoom::offline_analyzer::write_streams_log() {
                 << flow.bytes << std::endl;
         }
     }
+    */
 }
 
 void zoom::offline_analyzer::_write_pkt_log(const zoom::pkt& pkt) {
