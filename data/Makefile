@@ -2,7 +2,7 @@
 BIN_PATH=../build
 DATASET_NAME=zoom-5min
 
-all: stats.html streams.html meetings.html
+all: stats.html streams.html meetings.html frames.html
 
 $(DATASET_NAME).zpkt flows.csv rate.csv types.csv: $(DATASET_NAME).pcap
 	${BIN_PATH}/zoom_flows -i $< -f flows.csv -t types.csv -r rate.csv -z $@

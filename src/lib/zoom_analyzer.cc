@@ -12,7 +12,7 @@ void zoom::analyzer::enable_frame_log(const std::string& file_path) {
 
     _frame_log.open(file_path);
 
-    _frame_log.stream << "#ip_proto,ip_src,tp_src,ip_dst,tp_dst,ssrc,pt,media_type,rtp_ext1,"
+    _frame_log.stream << "ip_proto,ip_src,tp_src,ip_dst,tp_dst,ssrc,media_type,rtp_ext1,"
                       << "min_ts_s, min_ts_us,max_ts_s,max_ts_us,rtp_ts,pkts_seen,pkts_hint,"
                       << "frame_size,fps,jitter_ms"
                       << std::endl;

@@ -1,0 +1,28 @@
+---
+title: "5 min. Zoom Test Trace: Frames"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    df_print: paged
+params:
+  input_file: "frames.csv"
+  fig_path: "fig/"
+---
+
+```{R setup, include=FALSE}
+source("setup.R")
+
+knitr::opts_chunk$set(dev = c("png", "pdf"), fig.width = 9, fig.height = 4.5,
+  fig.align = "center", fig.keep = "high", fig.path = params$fig_path)
+```
+
+```{R import}
+frames <- read_csv(params$input_file, col_types = "fcicinffnnnnniiinn")
+```
+
+```{r}
+frames %>%
+  filter(media_type != 0) %>%
+  group_by(media_type, rtp_ext1) %>%
+  summarize(n = n(), .groups='drop')
+```
