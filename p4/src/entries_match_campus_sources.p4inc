@@ -1,0 +1,9 @@
+            ( 32w0x80700000 &&& 32w0xffff0000 ): set_campus_src_matched();
+            ( 32w0x8cb40000 &&& 32w0xffff0000 ): set_campus_src_matched();
+            ( 32w0xcc993000 &&& 32w0xfffffe00 ): set_campus_src_matched();
+            ( 32w0x42b4b000 &&& 32w0xffffff00 ): set_campus_src_matched();
+            ( 32w0x42b4b100 &&& 32w0xffffff00 ): set_campus_src_matched();
+            ( 32w0x42b4b400 &&& 32w0xfffffc00 ): set_campus_src_matched();
+            ( 32w0xc0a80000 &&& 32w0xffff0000 ): set_campus_src_matched();
+            ( 32w0xac100000 &&& 32w0xfff00000 ): set_campus_src_matched();
+            ( 32w0x0a000000 &&& 32w0xff000000 ): set_campus_src_matched();
