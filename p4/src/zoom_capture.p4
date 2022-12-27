@@ -13,7 +13,7 @@
 typedef bit<48> mac_addr_t;
 typedef bit<16> ether_type_t;
 typedef bit<32> ipv4_addr_t;
-typedef bit<8> ip_protocol_t;
+typedef bit<8>  ip_protocol_t;
 typedef bit<32> mask_t;
 
 typedef bit<24> srcAddr_oui_t;
@@ -123,12 +123,11 @@ parser TofinoIngressParser(
     }
 
     state parse_resubmit {
-        // parse resubmitted packet here
         transition reject;
     }
     
     state parse_port_metadata {
-        pkt.advance(64); // tofino 1 port metadata size
+        pkt.advance(64);
         transition accept;
     }
 }
@@ -256,7 +255,7 @@ control SwitchIngress(
             // The file below contains an enumeration of Zoom IP prefixes as match-action table entries.
             // Please update this file if the list changes. Currently, this list is available here on the Zoom website:
             // https://support.zoom.us/hc/en-us/articles/201362683-Zoom-network-firewall-or-proxy-server-settings
-             #include "entries_match_zoom_server.p4inc"
+            #include "entries_match_zoom_server.p4inc"
         }
 
         const default_action = nop();
@@ -295,15 +294,7 @@ control SwitchIngress(
 
         const entries = {
             // These rules are specific to the Princeton campus; please replace with IP prefixes of your own network
-            ( 32w0x80700000 &&& 32w0xffff0000 ): set_campus_src_matched();
-            ( 32w0x8cb40000 &&& 32w0xffff0000 ): set_campus_src_matched();
-            ( 32w0xcc993000 &&& 32w0xfffffe00 ): set_campus_src_matched();
-            ( 32w0x42b4b000 &&& 32w0xffffff00 ): set_campus_src_matched();
-            ( 32w0x42b4b100 &&& 32w0xffffff00 ): set_campus_src_matched();
-            ( 32w0x42b4b400 &&& 32w0xfffffc00 ): set_campus_src_matched();
-            ( 32w0xc0a80000 &&& 32w0xffff0000 ): set_campus_src_matched();
-            ( 32w0xac100000 &&& 32w0xfff00000 ): set_campus_src_matched();
-            ( 32w0x0a000000 &&& 32w0xff000000 ): set_campus_src_matched();
+            #include "entries_match_campus_sources.p4inc"
         }
 
         const default_action = nop();
@@ -321,15 +312,7 @@ control SwitchIngress(
 
         const entries = {
             // These rules are specific to the Princeton campus; please replace with IP prefixes of your own network
-            ( 32w0x80700000 &&& 32w0xffff0000 ): set_campus_dst_matched();
-            ( 32w0x8cb40000 &&& 32w0xffff0000 ): set_campus_dst_matched();
-            ( 32w0xcc993000 &&& 32w0xfffffe00 ): set_campus_dst_matched();
-            ( 32w0x42b4b000 &&& 32w0xffffff00 ): set_campus_dst_matched();
-            ( 32w0x42b4b100 &&& 32w0xffffff00 ): set_campus_dst_matched();
-            ( 32w0x42b4b400 &&& 32w0xfffffc00 ): set_campus_dst_matched();
-            ( 32w0xc0a80000 &&& 32w0xffff0000 ): set_campus_dst_matched();
-            ( 32w0xac100000 &&& 32w0xfff00000 ): set_campus_dst_matched();
-            ( 32w0x0a000000 &&& 32w0xff000000 ): set_campus_dst_matched();
+            #include "entries_match_campus_destinations.p4inc"
         }
 
         const default_action = nop();
