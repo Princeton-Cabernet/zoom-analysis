@@ -13,6 +13,8 @@
 
 5. The program sets the ethernet source address of the outgoing packet to the total packet count (32-bit integer) seen so far. Likewise, it sets the ethernet destination address to the Zoom packet count (32-bit integer) seen so far. To disable this feature and to preserve the original ethernet addresses, comment out the calls to `set_all_pkts_count_to_ethernet_src()` and `set_zoom_pkts_count_to_ethernet_dst()`.
 
+6. We used the ONTAS system ([paper](https://p4campus.cs.princeton.edu/pubs/ontas_netai_paper.pdf), [code](https://github.com/Princeton-Cabernet/p4-projects/tree/master/ONTAS/tofino_p4_14)) to anonymize personally identifiable information (e.g., IP addresses of campus clients) in the outgoing packets. We adapted the ONTAS code for P4<sub>16</sub> and placed it directly in the egress pipeline of our P4 program.
+
 ### Test the program:
 
 1. Run `sudo python3 test/send.py [-i INTERFACE] -t TYPE` to send packets to the Zoom capture program. Specify (optionally) the interface on which to send packets; the default is `veth1`. The `-t/--type` parameter is required, and can be set to `server`, `stun`, `p2p`, or `other` depending on the desired type of packets.
