@@ -89,7 +89,7 @@ int main(int argc, char** argv) {
                 last_ts = pkt.ts.tv_sec;
                 last_total_pkt_count = mac_counter.count();
 
-                rate_out << "#ts_s,total_pkts,zoom_pkts,zoom_bytes" << std::endl;
+                rate_out << "ts_s,total_pkts,zoom_pkts,zoom_bytes" << std::endl;
             }
 
             if (pkt.ts.tv_sec > last_ts) {
