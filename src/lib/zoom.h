@@ -32,7 +32,7 @@ namespace zoom {
     struct pkt {
 
         pkt();
-        pkt(const struct zoom::headers& hdr, timeval tv, bool is_p2p);
+        pkt(const struct zoom::headers& hdr, timeval tv, std::size_t pcap_frame_len, bool is_p2p);
         pkt(const pkt&) = default;
         pkt& operator=(const pkt&) = default;
 
@@ -85,9 +85,11 @@ namespace zoom {
         proto_data proto             = {};   // 12 Bytes
         std::uint8_t rtp_ext1[3]     = {0}; // 3 Bytes
         std::uint8_t pad             = 0;   // 1 Byte
+        std::uint16_t pcap_frame_len = 0;   // 2 Bytes
+        std::uint16_t pad2           = 0;   // 2 Bytes
     };
 
-    static_assert(sizeof(struct zoom::pkt) == 56);
+    static_assert(sizeof(struct zoom::pkt) == 60);
 
     enum class media_type : std::uint8_t {
         audio  = 0,
@@ -115,29 +117,6 @@ namespace zoom {
         bool operator==(const struct media_stream_key& a) const;
     };
 
-    /*
-    struct rtp_stream_key {
-        net::ipv4_5tuple ip_5t = {};
-        std::uint32_t rtp_ssrc = 0;
-        std::uint8_t  rtp_pt   = 0;
-
-        static rtp_stream_key from_pkt(const pkt& pkt);
-
-        bool operator<(const struct rtp_stream_key& a) const;
-        bool operator==(const struct rtp_stream_key& a) const;
-    };
-    */
-
-    /*
-    struct media_stream_meta {
-        net::ipv4_5tuple ip_5t  = {};
-        std::uint32_t rtp_ssrc  = 0;
-        media_type media_type;
-        stream_type stream_type;
-
-        static media_stream_meta from_pkt(const pkt& pkt);
-    };
-    */
     struct rtp_pkt_meta {
         std::uint8_t rtp_ext1[3]  = {0, 0, 0};
         std::uint8_t pkt_type     = 0;
