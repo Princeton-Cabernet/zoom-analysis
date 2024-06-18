@@ -14,6 +14,8 @@ source("setup.R")
 
 knitr::opts_chunk$set(dev = c("png", "pdf"), fig.width = 9, fig.height = 4.5,
   fig.align = "center", fig.keep = "high", fig.path = params$fig_path)
+
+timeval_to_ms <- function(s, us, off = 0) { (s - off) * 1000 + us / 1000 }
 ```
 
 ```{R import}
@@ -26,3 +28,26 @@ frames %>%
   group_by(media_type, rtp_ext1) %>%
   summarize(n = n(), .groups='drop')
 ```
+
+```{r}
+video <- frames %>% filter(media_type == 16)
+
+video %<>%
+  mutate(min_ts_ms = timeval_to_ms(min_ts_s, min_ts_us, video$min_ts_s %>% min())) %>%
+  mutate(max_ts_ms = timeval_to_ms(max_ts_s, max_ts_us, video$min_ts_s %>% min())) %>%
+  select(-c(min_ts_s, min_ts_us, max_ts_s, max_ts_us))
+```
+
+```{r video-fps, fig.width = 5.2, fig.height = 2.0}
+video %>% filter(pkts_seen == pkts_hint) %>%
+  arrange(max_ts_ms) %>%
+  mutate(max_ts_s = max_ts_ms / 1000) %>%
+  ggplot(aes(x=max_ts_s, y=fps)) +
+    labs(x="Time [s]", y="Frame Rate [fps]") +  
+    geom_line(color="steelblue4") +
+    theme_om()
+```
+
+
+
+
