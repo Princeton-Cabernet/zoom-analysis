@@ -82,7 +82,8 @@ zoom::pkt::pkt()
     : zoom_srv_type(0),
       zoom_media_type(0),
       pkts_in_frame(0),
-      udp_pl_len(0) {
+      udp_pl_len(0),
+      pcap_frame_len{0} {
 
     flags.p2p      = 0;
     flags.srv      = 0;
@@ -92,7 +93,7 @@ zoom::pkt::pkt()
     flags.from_srv = 0;
 }
 
-zoom::pkt::pkt(const struct zoom::headers& hdr, timeval tv, bool is_p2p) {
+zoom::pkt::pkt(const struct zoom::headers& hdr, timeval tv, std::size_t pcap_frame_len, bool is_p2p) {
 
     ts.s = tv.tv_sec;
     ts.us = tv.tv_usec;
@@ -103,6 +104,8 @@ zoom::pkt::pkt(const struct zoom::headers& hdr, timeval tv, bool is_p2p) {
     ip_5t.ip_src = ntohl(hdr.ip->src_addr);
     ip_5t.ip_dst = ntohl(hdr.ip->dst_addr);
     ip_5t.ip_proto = hdr.ip->next_proto_id;
+
+    this->pcap_frame_len = pcap_frame_len;
 
     if (ip_5t.ip_proto == 17) {
         ip_5t.tp_src = ntohs(hdr.udp->src_port);

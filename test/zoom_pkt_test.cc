@@ -46,13 +46,13 @@ TEST_CASE("zoom::pkt: is initialized with empty fields", "[zoom][pkt]") {
     CHECK(p.proto.rtcp.ssrc == 0);
     CHECK(p.proto.rtcp.pt == 0);
 
-    CHECK(sizeof(p) == 56);
+    CHECK(sizeof(p) == 60);
 }
 
 TEST_CASE("zoom::pkt: can be initialized from rtp headers", "[zoom][pkt]") {
 
     auto h = zoom::parse_zoom_pkt_buf(test::zoom_srv_video_buf, true, false);
-    zoom::pkt p(h, {1, 2}, false);
+    zoom::pkt p{h, {1, 2}, 122, false};
 
     CHECK(p.flags.p2p == 0);
     CHECK(p.flags.srv == 1);
@@ -60,6 +60,7 @@ TEST_CASE("zoom::pkt: can be initialized from rtp headers", "[zoom][pkt]") {
     CHECK(p.flags.rtcp == 0);
     CHECK(p.flags.to_srv == 0);
     CHECK(p.flags.from_srv == 1);
+    CHECK(p.pcap_frame_len == 122);
 
     CHECK(p.proto.rtp.ssrc == 16779265);
     CHECK(p.proto.rtp.ts == 4092042800);
@@ -70,7 +71,7 @@ TEST_CASE("zoom::pkt: can be initialized from rtp headers", "[zoom][pkt]") {
 TEST_CASE("zoom::pkt: can be initialized from rtcp headers", "[zoom][pkt]") {
 
     auto h = zoom::parse_zoom_pkt_buf(test::zoom_srv_rtcp_buf, true, false);
-    zoom::pkt p(h, {1, 2}, false);
+    zoom::pkt p{h, {1, 2}, 98, false};
 
     CHECK(p.flags.p2p == 0);
     CHECK(p.flags.srv == 1);
@@ -78,6 +79,7 @@ TEST_CASE("zoom::pkt: can be initialized from rtcp headers", "[zoom][pkt]") {
     CHECK(p.flags.rtcp == 1);
     CHECK(p.flags.to_srv == 1);
     CHECK(p.flags.from_srv == 0);
+    CHECK(p.pcap_frame_len == 98);
 
     CHECK(p.proto.rtcp.ssrc == 16778242);
     CHECK(p.proto.rtcp.pt == 200);
@@ -90,7 +92,7 @@ TEST_CASE("zoom::pkt: can be initialized from rtcp headers", "[zoom][pkt]") {
 TEST_CASE("zoom::pkt: can be initialized from rtp buffers with short format", "[zoom][pkt]") {
 
     auto h = zoom::parse_zoom_pkt_buf(test::zoom_srv_video_short_buf, true, false);
-    zoom::pkt p(h, {1, 2}, false);
+    zoom::pkt p{h, {1, 2}, 577, false};
 
     CHECK(p.flags.p2p == 0);
     CHECK(p.flags.srv == 1);
@@ -98,6 +100,7 @@ TEST_CASE("zoom::pkt: can be initialized from rtp buffers with short format", "[
     CHECK(p.flags.rtcp == 0);
     CHECK(p.flags.to_srv == 0);
     CHECK(p.flags.from_srv == 1);
+    CHECK(p.pcap_frame_len == 577);
 
     CHECK(p.proto.rtp.ssrc == 16779266);
     CHECK(p.proto.rtp.pt == 98);
@@ -113,7 +116,7 @@ TEST_CASE("zoom::pkt: can be initialized with a pcap packet ", "[zoom][pkt]") {
     pcap_reader.next(pcap_pkt);
 
     auto hdr = zoom::parse_zoom_pkt_buf(pcap_pkt.buf, true, true);
-    zoom::pkt zoom_pkt(hdr, pcap_pkt.ts, true);
+    zoom::pkt zoom_pkt{hdr, pcap_pkt.ts, pcap_pkt.frame_len, true};
 
     CHECK(zoom_pkt.ts.s == 1632344358);
     CHECK(zoom_pkt.ts.us == 611365);
@@ -121,6 +124,7 @@ TEST_CASE("zoom::pkt: can be initialized with a pcap packet ", "[zoom][pkt]") {
     CHECK(zoom_pkt.flags.srv == 0);
     CHECK(zoom_pkt.flags.to_srv == 0);
     CHECK(zoom_pkt.flags.from_srv == 0);
+    CHECK(zoom_pkt.pcap_frame_len == pcap_pkt.frame_len);
 
     CHECK(zoom_pkt.ip_5t.ip_src == 0xa09791c);
     CHECK(zoom_pkt.ip_5t.ip_dst == 0xa094aac);
@@ -156,7 +160,7 @@ TEST_CASE("zoom::pkt: can be written to and read from a file", "[zoom][pkt]") {
     while (pcap_reader.next(pcap_pkt)) {
 
         auto hdr = zoom::parse_zoom_pkt_buf(pcap_pkt.buf, true, true);
-        zoom::pkt zpkt(hdr, pcap_pkt.ts, true);
+        zoom::pkt zpkt(hdr, pcap_pkt.ts, pcap_pkt.frame_len, true);
         zpkt_writer.write(zpkt);
     }
 
@@ -188,6 +192,7 @@ TEST_CASE("zoom::pkt: can be written to and read from a file", "[zoom][pkt]") {
             CHECK(zoom_pkt.ip_5t.ip_proto == 17);
 
             CHECK(zoom_pkt.udp_pl_len == 1263);
+            CHECK(zoom_pkt.pcap_frame_len == 1297);
 
             CHECK(zoom_pkt.zoom_srv_type == 0);
             CHECK(zoom_pkt.zoom_media_type == 16);
