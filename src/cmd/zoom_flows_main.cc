@@ -136,7 +136,7 @@ int main(int argc, char** argv) {
             }
 
             if (config.zpkt_out_file_name && zoom_flow->is_udp()) {
-                zoom::pkt zpkt(hdr, pkt.ts, zoom_flow->is_p2p());
+                zoom::pkt zpkt{hdr, pkt.ts, pkt.frame_len, zoom_flow->is_p2p()};
                 zpkt_writer.write(zpkt);
             }
 

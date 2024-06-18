@@ -140,6 +140,7 @@ void zoom::offline_analyzer::_write_pkt_log(const zoom::pkt& pkt) {
         << std::dec << (unsigned) pkt.proto.rtp.pt << ","
         << std::dec << (unsigned) pkt.proto.rtp.seq << ","
         << std::dec << (unsigned) pkt.proto.rtp.ts << ","
+        << std::dec << (unsigned) pkt.pcap_frame_len << ","
         << std::dec << (unsigned) pkt.udp_pl_len << ",";
 
     if (pkt.rtp_ext1[0] != 0 || pkt.rtp_ext1[1] != 0 || pkt.rtp_ext1[2] != 0) {
