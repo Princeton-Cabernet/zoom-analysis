@@ -157,7 +157,7 @@ int main(int argc, char** argv) {
     }
 
     if (config.flows_out_file_name) {
-        flows_out << "# flow_id,ip_proto,ip_src,tp_src,ip_dst,tp_dst,type,pkts,bytes,"
+        flows_out << "flow_id,ip_proto,ip_src,tp_src,ip_dst,tp_dst,type,pkts,bytes,"
                   << "start_ts_tvs,start_ts_tvus,end_ts_tvs,end_ts_tvus" << std::endl;
 
         for (const auto& [ip_5t, stats]: flow_tracker.flows()) {
@@ -172,7 +172,7 @@ int main(int argc, char** argv) {
 
     if (config.types_out_file_name) {
 
-        types_out << "# mode,outer_type,inner_type,pkts,bytes" << std::endl;
+        types_out << "mode,outer_type,inner_type,pkts,bytes" << std::endl;
 
         for (unsigned type = 0; type < 256; type++) {
             if (p2p_inner_types[type].pkts > 0) {
